@@ -133,6 +133,23 @@ st.caption(
 # environmental levy moved to footnote *, the premium year into the subtitle.
 st.info(t("data_banner"), icon="ℹ️")
 
+# When switching is possible, and with which premiums. The premium year of the
+# data says which season it is: next year's premiums are out from about the end
+# of September, and from then until year end people can switch for 1 January
+# (KVG Art. 7, KVV Art. 94 and 100). The rest of the year the figures are for
+# the running year - useful to judge today's contract, not yet for the switch,
+# which has to wait for next year's premiums. Data older than the running year
+# means the BAG download has been failing.
+this_year = date.today().year
+if premium_year > this_year:
+    st.markdown(f'<div class="season">{t_html("season.open", year=premium_year, deadline_year=this_year)}</div>',
+                unsafe_allow_html=True)
+elif premium_year == this_year:
+    st.markdown(f'<div class="season">{t_html("season.closed", year=premium_year, next=premium_year + 1)}</div>',
+                unsafe_allow_html=True)
+else:
+    st.warning(t("season.stale", year=premium_year))
+
 people = st.session_state["people"]
 
 
@@ -308,32 +325,16 @@ household_total(results, len(child_ids), shared, premium_year=premium_year)
 
 st.markdown("---")
 
+# Three blocks in a fixed order: everything about the calculation (what it
+# leaves out, then the footnotes), then the personal part, then privacy right
+# above the footer, where people look for it. The tools used to sit in the
+# middle of the fine print.
+
 # The same limitations as in the README - whoever uses the app does not read the
 # README. Collapsed, so the page does not end in small print, but reachable from
 # anywhere on the page.
 with st.expander(t("disclaimer.title")):
     st.markdown(t("disclaimer.body", priminfo=PRIMINFO_URL))
-
-# The two housekeeping rows share one shape: caption left, the button flush
-# with the right edge at its natural size, so the two line up on that edge.
-left, right = st.columns([3, 1], vertical_alignment="center")
-left.caption(t("reload_data.caption"))
-if right.container(horizontal_alignment="right").button(
-        t("reload_data.button"), key="reload_data_button"):
-    st.cache_data.clear()
-    premiums(0)
-    st.rerun()
-
-# Anything kept on the visitor's machine needs a way to be got rid of, in plain
-# sight rather than buried in browser settings.
-links, clear = st.columns([3, 1], vertical_alignment="center")
-links.caption(t("storage.caption"))
-if clear.container(horizontal_alignment="right").button(
-        t("storage.forget_button"), key="forget_inputs_button"):
-    request_forget()
-    st.rerun()
-
-st.markdown("---")
 
 # The footnotes, in the order their markers appear: * on the data source in the
 # lead, ** on the Kipppunkt in each chart caption, *** on the tariff-model help.
@@ -354,6 +355,20 @@ st.markdown("---")
 st.caption(t("motivation"))
 st.caption(t("footer.coffee", url=COFFEE_URL))
 st.caption(t("footer.contact", mailto=f"mailto:{CONTACT_EMAIL}"))
+
+st.markdown("---")
+
+# Anything kept on the visitor's machine needs a way to be got rid of, in plain
+# sight rather than buried in browser settings. There is no "reload premium
+# data" button any more: that was maintenance, and it let any visitor make the
+# server fetch and parse the 12 MB BAG file. The data refreshes every seven
+# days and on every container start.
+links, clear = st.columns([3, 1], vertical_alignment="center")
+links.caption(t("storage.caption"))
+if clear.container(horizontal_alignment="right").button(
+        t("storage.forget_button"), key="forget_inputs_button"):
+    request_forget()
+    st.rerun()
 
 # The footer block from abstractaltitudes, same rows in the same order: what you
 # can do, what it is built on, what else I have made, the copyright. Each row is
