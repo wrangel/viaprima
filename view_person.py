@@ -451,11 +451,15 @@ def person_view(
         # premiums shown here were gross - 503.50 instead of 498.75.
         net = offers["Prämie"] - environmental_rebate
         offers["Prämie/Jahr"] = (net * 12).round(0)
-        offers = with_gap_to_cheapest(offers, "Prämie/Jahr", "Mehrkosten/Jahr")
+        # "Mehrprämie", not "Mehrkosten": every offer here has the same
+        # deductible, so the premium gap is also the gap in total costs - but
+        # "Mehrkosten" is the total-cost column of the table above, and the
+        # same word for two calculations confused.
+        offers = with_gap_to_cheapest(offers, "Prämie/Jahr", "Mehrprämie/Jahr")
         offers["Prämie/Monat"] = net.round(2)
         offers["Typ"] = offers["Typ"].map(lambda c: t(f"tariff_short.{c}"))
         columns = ["Rang", "Versicherer", "Tarif", "Typ", "Prämie/Jahr",
-                   "Mehrkosten/Jahr", "Prämie/Monat"]
+                   "Mehrprämie/Jahr", "Prämie/Monat"]
         # Today's contract is marked by a tinted row rather than an extra
         # column: that column had an empty header, so Streamlit sized it to
         # nothing and cut the marker text off. The accent at low alpha reads
@@ -469,7 +473,7 @@ def person_view(
         offers = offers[columns]
         show_table(
             offers,
-            {"Prämie/Jahr": 0, "Mehrkosten/Jahr": 0, "Prämie/Monat": 2},
+            {"Prämie/Jahr": 0, "Mehrprämie/Jahr": 0, "Prämie/Monat": 2},
             highlight=is_current,
             counters=("Rang",),
         )
