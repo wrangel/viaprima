@@ -26,12 +26,18 @@ breach. The app has no accounts, no login, no database and no server-side
 storage of anything a visitor types. Nothing is sent to third parties; usage
 statistics are switched off.
 
-What you enter — postcode, age, expected healthcare costs, choice of tariff
-models — is kept in the browser's own `localStorage`, so that reloading the
-page does not throw it away. That store never leaves your machine: it is not a
-cookie, so it is not attached to requests and never reaches the server or its
-logs. "Eingaben vergessen" at the foot of the page deletes it, and a form you
-have not touched is not stored at all.
+What you enter — postcode, year of birth, accident cover, expected healthcare
+costs, tariff models, today's insurer, model and deductible — is kept in the
+browser's own `localStorage`, so that reloading the page does not throw it
+away. That store never leaves your machine: it is not a cookie, so it is not
+attached to requests and never reaches the server or its logs. "Eingaben
+löschen" at the foot of the page deletes it, and a form you have not touched is
+not stored at all.
+
+The values themselves do reach the server, because that is where Streamlit
+calculates: each change travels over the page's websocket, is computed with,
+and is held only in that browser session's memory until the tab closes. The
+app writes none of it to disk or to a log, and the page says so in those words.
 
 A cookie was considered and rejected for exactly this reason: it would travel
 with every request and end up in the reverse proxy's access log. Query

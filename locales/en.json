@@ -119,7 +119,7 @@
   "season.closed": "📅 **The {next} premiums come out at the end of September.** Until then the app calculates with the {year} premiums and shows whether today's contract is a good choice. As a rule you can only switch for 1 January {next} – calculate again with the new premiums then; the app picks them up by itself. Only with the ordinary deductible in the standard model can you also switch insurer for the end of June (notice by 31 March).",
   "season.open": "📅 **Switching season for {year}.** A new insurer, another model or a lower deductible take effect on 1 January {year} if the notice reaches your current insurer by 30 November {deadline_year}. A higher deductible can be chosen until 31 December {deadline_year}.",
   "season.stale": "The premium data is from {year} and no longer current – the new data could not be loaded yet. The figures may differ from today's premiums.",
-  "storage.caption": "Your entries stay on this device so that reloading does not discard them. They never leave the browser – neither to this server nor to anyone else.",
+  "storage.caption": "Your entries are stored on this device only, so nothing is lost when you reload. To calculate, they are sent to viaprima, which neither stores nor analyses them.",
   "storage.forget_button": "Clear my entries",
   "subtitle": "Basic health insurance:\nFind the cheapest option for your situation in premium year {year}",
   "table.costs_per_deductible": "Costs per deductible",

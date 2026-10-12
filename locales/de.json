@@ -119,7 +119,7 @@
   "season.closed": "📅 **Die Prämien {next} erscheinen Ende September.** Bis dahin rechnet die App mit den Prämien {year} und zeigt, ob dein heutiger Vertrag gut gewählt ist. Wechseln kannst du in der Regel erst auf 1. Januar {next} – rechne dann mit den neuen Prämien noch einmal, die App übernimmt sie von selbst. Nur mit der ordentlichen Franchise im Standardmodell geht ein Wechsel des Versicherers auch auf Ende Juni (Kündigung bis 31. März).",
   "season.open": "📅 **Wechselzeit für {year}.** Ein neuer Versicherer, ein anderes Modell oder eine tiefere Franchise gelten ab 1. Januar {year}, wenn die Kündigung bis 30. November {deadline_year} beim bisherigen Versicherer eingetroffen ist. Eine höhere Franchise kannst du bis 31. Dezember {deadline_year} wählen.",
   "season.stale": "Die Prämiendaten sind von {year} und damit nicht mehr aktuell – die neuen liessen sich noch nicht laden. Die Zahlen hier können von den heutigen Prämien abweichen.",
-  "storage.caption": "Deine Eingaben bleiben auf diesem Gerät, damit beim Neuladen nichts verloren geht. Sie verlassen den Browser nie. Weder zu diesem Server noch sonst wohin.",
+  "storage.caption": "Deine Eingaben werden nur auf diesem Gerät gespeichert, damit beim Neuladen nichts verloren geht. Zum Rechnen gehen sie an viaprima, werden dort aber weder gespeichert noch ausgewertet.",
   "storage.forget_button": "Eingaben löschen",
   "subtitle": "Die Grundversicherung:\nFinde die günstigste Lösung für deine Situation im Prämienjahr {year}",
   "table.costs_per_deductible": "Kosten pro Franchise",

@@ -119,7 +119,7 @@
   "season.closed": "📅 **I premi {next} escono a fine settembre.** Fino ad allora l'applicazione calcola con i premi {year} e mostra se il contratto attuale è ben scelto. Di regola si può cambiare solo al 1° gennaio {next} – rifai allora il calcolo con i nuovi premi, l'applicazione li riprende da sola. Solo con la franchigia ordinaria nel modello standard si può cambiare assicuratore anche a fine giugno (disdetta entro il 31 marzo).",
   "season.open": "📅 **Periodo di cambio per il {year}.** Un nuovo assicuratore, un altro modello o una franchigia più bassa valgono dal 1° gennaio {year} se la disdetta giunge all'assicuratore attuale entro il 30 novembre {deadline_year}. Una franchigia più alta si può scegliere fino al 31 dicembre {deadline_year}.",
   "season.stale": "I dati dei premi sono del {year} e non più aggiornati – i nuovi non si sono ancora potuti caricare. Le cifre possono differire dai premi attuali.",
-  "storage.caption": "Le tue immissioni restano salvate su questo dispositivo, così un ricaricamento non le cancella. Non lasciano il browser – né verso questo server né verso terzi.",
+  "storage.caption": "Le tue immissioni vengono salvate solo su questo dispositivo, così non si perdono ricaricando la pagina. Per il calcolo vengono trasmesse a viaprima, che però non le salva né le analizza.",
   "storage.forget_button": "Cancella le immissioni",
   "subtitle": "L'assicurazione di base:\nTrova la soluzione più conveniente per la tua situazione nell'anno di premio {year}",
   "table.costs_per_deductible": "Costi per franchigia",
