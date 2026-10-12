@@ -119,7 +119,7 @@
   "season.closed": "📅 **Les primes {next} paraissent fin septembre.** D'ici là, l'application calcule avec les primes {year} et montre si votre contrat actuel est bien choisi. En règle générale, vous ne pouvez changer qu'au 1er janvier {next} – refaites alors le calcul avec les nouvelles primes, l'application les reprend d'elle-même. Seule la franchise ordinaire avec le modèle standard permet aussi de changer d'assureur à fin juin (résiliation jusqu'au 31 mars).",
   "season.open": "📅 **Période de changement pour {year}.** Un nouvel assureur, un autre modèle ou une franchise plus basse s'appliquent dès le 1er janvier {year} si la résiliation parvient à l'assureur actuel au plus tard le 30 novembre {deadline_year}. Une franchise plus élevée peut être choisie jusqu'au 31 décembre {deadline_year}.",
   "season.stale": "Les données de primes datent de {year} et ne sont plus à jour – les nouvelles n'ont pas encore pu être chargées. Les chiffres peuvent différer des primes actuelles.",
-  "storage.caption": "Vos saisies restent enregistrées sur cet appareil afin qu'un rechargement ne les efface pas. Elles ne quittent pas le navigateur – ni vers ce serveur, ni vers des tiers.",
+  "storage.caption": "Vos saisies ne sont enregistrées que sur cet appareil, pour que rien ne se perde en rechargeant la page. Pour le calcul, elles sont transmises à viaprima, qui ne les enregistre ni ne les analyse.",
   "storage.forget_button": "Effacer les saisies",
   "subtitle": "L'assurance de base :\nTrouvez la solution la moins chère pour votre situation pour l'année de primes {year}",
   "table.costs_per_deductible": "Coûts par franchise",

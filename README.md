@@ -122,7 +122,7 @@ Below the list, **Gesamtkosten des Haushalts** adds everyone up — people whose
 collapsed included, so the total does not change just because a section was closed. From
 two children onwards it also compares free choice per child against all children with one
 insurer, which is the only way any sibling discount is available, and reports the family
-cap on cost sharing. The whole household can be downloaded as CSV with a total row.
+cap on cost sharing. The whole household can be downloaded as an Excel workbook: a summary with a total row, then one sheet per person with their cost matrix.
 
 Entries are kept in the browser's `localStorage`, so a reload does not discard
 them. That store never leaves the machine — it is not a cookie, so it is never
