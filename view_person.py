@@ -309,7 +309,14 @@ def person_view(
                     domain=[t("chart.choice_best"), t("chart.choice_other")],
                     range=[4, 1.5],
                 ),
-                legend=alt.Legend(title=t("chart.legend_choice")),
+                # Only the bold entry, in the person's colour - the line it
+                # stands for. Vega colours all entries of one legend alike, so
+                # "andere" went: the thin muted lines are plainly the others.
+                legend=alt.Legend(
+                    title=t("chart.legend_choice"),
+                    values=[t("chart.choice_best")],
+                    symbolStrokeColor=colour or "#4da6ff",
+                ),
             ),
             opacity=alt.Opacity(
                 "Gewicht:N",
