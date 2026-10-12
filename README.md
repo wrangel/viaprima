@@ -282,8 +282,12 @@ different de-duplication and would not be comparable.
   [BAG register of authorised health insurers](https://www.bag.admin.ch/de/verzeichnisse-der-zugelassenen-kranken-und-rueckversicherer).
   The download URL contains a hash that changes annually: read the new URL off the page,
   enter it in `refresh_insurers.py` and run it.
-- **Premium data** — fetched automatically and cached for seven days under `.cache/`. In
-  the interface, *Prämiendaten neu laden* forces a refetch.
+- **Premium data** — fetched automatically and cached for seven days under `.cache/` (in
+  the container, the `premium-cache` volume). To refetch sooner, delete the cached file and
+  restart; there is deliberately no button for it in the interface. The notice under the
+  info box follows the data: deadlines for 1 January while next year's premiums are loaded,
+  an off-season note while they are not yet published, a warning if the data is older than
+  the running year.
 - **Premium regions** — `data/premium_regions.json` is produced by `refresh_regions.py`. Its
   source URL carries the year (`praemienregionen-2027.xlsx`) and therefore changes
   annually.

@@ -210,6 +210,17 @@ def configure_page() -> None:
              hinzufügen", faint, on the two Wechsel cells. */
           .vp-table td.changed { background: rgba(95, 185, 122, 0.18); }
 
+          /* The season line under the info box: when switching is possible.
+             Quieter than an alert, but set apart by the brand accent. */
+          .season {
+              border-left: 3px solid #4da6ff;
+              background: rgba(77, 166, 255, 0.08);
+              border-radius: 0.5rem;
+              padding: 0.75rem 1rem;
+              margin: 0 0 1rem 0;
+              line-height: 1.6;
+          }
+
           /* The language switch reads as text, not as a control: muted grey,
              no border, no fill, brightening to the accent on hover. */
           [class*="st-key-lang_"] button {
