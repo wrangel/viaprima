@@ -7,7 +7,7 @@ import pandas as pd
 import streamlit as st
 
 from common import chf, show_table
-from constants import CHILDREN, noticeable_saving
+from constants import CHILDREN, coinsurance_cap, coinsurance_rate, noticeable_saving
 from i18n import t
 
 
@@ -22,14 +22,20 @@ def household_total(
     children_separately = sum(
         r["annual_costs"] for r in results if r["age_group"] == CHILDREN
     )
-    others = sum(r["annual_costs"] for r in results if r["age_group"] != CHILDREN)
-    # For the children, whichever is cheaper applies: each child free to pick on
-    # the standard tier, or all of them with one insurer on a sibling discount.
-    children_chosen = (
-        min(children_separately, shared["total"]) if shared else children_separately
-    )
-    total = others + children_chosen
-    premiums = sum(r["annual_premium"] for r in results)
+    # Children placed together with one insurer (the box below) are shown and
+    # counted with that recommendation; their own best offers would
+    # contradict it.
+    children_shared = bool(shared) and shared["total"] < children_separately
+    rows = [advised(r, shared if children_shared else None, results) for r in results]
+    # The total is what the rows say: per person the advised contract - the
+    # cheapest offer, or where today's contract is given, the least change
+    # worth making (or staying). Shared children count with the box's total,
+    # which includes the family cap.
+    total = sum(row["annual_costs"] for row, r in zip(rows, results)
+                if not (children_shared and r["age_group"] == CHILDREN))
+    if children_shared:
+        total += shared["total"]
+    premiums = sum(row["premium"] for row in rows)
 
     st.markdown("---")
     st.header(t("household.heading"))
@@ -87,22 +93,24 @@ def household_total(
                 icon="👪",
             )
 
-    # Children placed together with one insurer (the box above) are compared
-    # with that recommendation; their own best offers would contradict it.
-    children_shared = bool(shared) and shared["total"] < children_separately
-
-    def switch(r: dict) -> tuple[str, str]:
-        """The Wechsel and Änderung cells: saving a year, and what to change."""
-        saving, changes = r.get("switch") or (None, [])
-        if children_shared and r["age_group"] == CHILDREN:
-            # Against the shared recommendation, not the child's own best.
-            saving, changes = shared.get("switch_by_id", {}).get(
-                r.get("id"), (None, []))
+    def switch(r: dict, row: dict) -> tuple[str, str]:
+        """The Ersparnis and Änderung cells: saving a year, and what to change."""
+        saving, changes = row["saving"], row["changes"]
         if saving is None:
             return "–", ""
         if saving < noticeable_saving:
             return t("household.switch_no"), ""
-        what = " + ".join(t(f"change.{c}") for c in changes)
+        current = list(r.get("current") or []) + [None, None, None]
+        parts = []
+        for c in changes:
+            if c == "deductible" and current[2] is not None:
+                parts.append(t("change.deductible_detail", old=chf(current[2]),
+                               new=chf(row["deductible"])))
+            elif c == "model" and current[1]:
+                parts.append(t("change.model_detail", old=current[1], new=row["tariff"]))
+            else:
+                parts.append(t(f"change.{c}"))
+        what = " + ".join(parts)
         return t("household.switch_saves", saving=chf(saving)), what[:1].upper() + what[1:]
 
     overview = pd.DataFrame(
@@ -113,19 +121,19 @@ def household_total(
                 "Nr.": i,
                 "Altersklasse": t(f'age_class.{r["age_group"]}'),
                 "Ort": r["town"],
-                "Franchise": r["deductible"],
-                "Versicherer": r["insurer"],
-                "Tarif": r["tariff"],
+                "Franchise": row["deductible"],
+                "Versicherer": row["insurer"],
+                "Tarif": row["tariff"],
                 # Per year only: the monthly figure for the whole household is
                 # in the metric above, and a second money column per row
                 # next to the yearly saving read as a third kind of amount.
-                "Kosten/Jahr": round(r["annual_costs"]),
+                "Kosten/Jahr": round(row["annual_costs"]),
                 # What changes first, then what it saves - under one "Wechsel"
                 # header in the table.
-                "Änderung": switch(r)[1],
-                "Ersparnis/Jahr": switch(r)[0],
+                "Änderung": switch(r, row)[1],
+                "Ersparnis/Jahr": switch(r, row)[0],
             }
-            for i, r in enumerate(results, start=1)
+            for i, (r, row) in enumerate(zip(results, rows), start=1)
         ]
     )
     changed = [bool(a) for a in overview["Änderung"]]
@@ -218,3 +226,32 @@ def _as_number(value):
     if isinstance(value, str) and value.replace("'", "").isdigit():
         return int(value.replace("'", ""))
     return value
+
+
+
+def advised(r: dict, shared: dict | None, results: list[dict]) -> dict:
+    """The contract a person's household row shows, with saving and changes.
+
+    Shared children (`shared` given): the box's recommendation for that child.
+    Otherwise, with today's contract given, the advice from contract_switch -
+    which is today's contract itself when switching saves too little - and
+    without one, the cheapest offer.
+    """
+    if shared is not None and r["age_group"] == CHILDREN:
+        children = [x for x in results if x["age_group"] == CHILDREN]
+        placement = shared["per_child"][children.index(r)]
+        saving, changes, _ = shared.get("switch_by_id", {}).get(r.get("id"), (None, [], None))
+        sharing = (min(r["costs"], placement["deductible"])
+                   + min(max(0.0, r["costs"] - placement["deductible"]) * coinsurance_rate,
+                         coinsurance_cap[CHILDREN]))
+        return {"insurer": shared["insurer"], "tariff": shared["tariff"],
+                "deductible": placement["deductible"],
+                "annual_costs": placement["costs"],
+                "premium": placement["costs"] - sharing,
+                "saving": saving, "changes": changes}
+    saving, changes, target = r.get("switch") or (None, [], None)
+    if target:
+        return {**target, "saving": saving, "changes": changes}
+    return {"insurer": r["insurer"], "tariff": r["tariff"], "deductible": r["deductible"],
+            "annual_costs": r["annual_costs"], "premium": r["annual_premium"],
+            "saving": saving, "changes": changes}
