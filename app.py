@@ -242,6 +242,14 @@ if not forgetting:
 
 if st.button(t("add_person"), key="add_person", width="stretch"):
     next_id = max((p["id"] for p in updated), default=0) + 1
+    # A household usually shares one address: the new person starts with the
+    # postcode of the person above - and the town, where one postcode spans
+    # several premium regions - rather than the default 8001.
+    if updated:
+        last = updated[-1]["id"]
+        for field in ("postcode", "town"):
+            if f"{field}_{last}" in st.session_state:
+                st.session_state[f"{field}_{next_id}"] = st.session_state[f"{field}_{last}"]
     st.session_state["people"] = st.session_state["people"] + [
         {"id": next_id, "birth_year": premium_year_of(raw) - 9,
          "accident": "MIT-UNF", "costs": 500}
