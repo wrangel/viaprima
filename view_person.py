@@ -125,8 +125,8 @@ _FRANCHISE_COLOURS = ["#7f8c9d", "#a9b6c6", "#9c8b7a", "#c6b8a8",
 def contract_switch(
     data: pd.DataFrame, current, best: dict, healthcare_costs: float,
     environmental_rebate: float, age_group: str,
-) -> tuple[float | None, list[str]]:
-    """What leaving today's contract saves a year, and what would change.
+) -> tuple[float | None, list[str], dict | None]:
+    """What leaving today's contract saves a year, what would change, and to what.
 
     `best` holds the recommendation: insurer, tariff, deductible, annual
     costs and the offers at its deductible. With today's deductible known,
@@ -137,29 +137,16 @@ def contract_switch(
     The change named is the least effort that gets within noticeable_saving
     of the cheapest: only the deductible at today's insurer and model, else a
     model (and deductible) at today's insurer, else the full switch. A new
-    insurer for one franc is not advice anyone needs. Changes are
-    "deductible", "model" and "insurer".
+    insurer for one franc is not advice anyone needs. Below noticeable_saving
+    the advice is to stay. Changes are "deductible", "model" and "insurer";
+    the third value is the advised contract - insurer, tariff, deductible,
+    annual_costs, premium (yearly, net) - which the household table shows in
+    the person's row.
     """
     if not current:
-        return None, []
+        return None, [], None
     insurer, tariff, deductible = (list(current) + [None])[:3]
     own = data[data["Versicherername"] == insurer]
-
-    if deductible is None:
-        offers = best["offers"]
-        today = switch_saving(offers, (insurer, tariff))
-        if today is None:
-            return None, []
-        # Premium differences against the cheapest offer, per tariff of
-        # today's insurer, at the recommended deductible.
-        same_insurer = offers[offers["Versicherername"] == insurer]
-        model_gap = float(round(float(same_insurer["Prämie"].min()) * 12)
-                          - round(float(offers["Prämie"].min()) * 12))
-        if model_gap < noticeable_saving:
-            cheapest_own = same_insurer.loc[same_insurer["Prämie"].idxmin(),
-                                            "Tarifbezeichnung"]
-            return today - model_gap, ([] if cheapest_own == tariff else ["model"])
-        return today, ["insurer"]
 
     def yearly(rows: pd.DataFrame) -> pd.Series:
         """Rounded yearly costs per row, as the tables show them."""
@@ -167,27 +154,60 @@ def contract_switch(
             float(row["Prämie"]), int(row["Franchise"]), healthcare_costs,
             environmental_rebate, age_group)), axis=1)
 
-    rows = own[(own["Tarifbezeichnung"] == tariff) & (own["Franchise"] == deductible)]
-    if rows.empty:
-        return None, []
-    today = float(yearly(rows).min())
-    cheapest = float(round(best["annual_costs"]))
+    def contract(row: pd.Series) -> dict:
+        return {"insurer": row["Versicherername"], "tariff": row["Tarifbezeichnung"],
+                "deductible": int(row["Franchise"]),
+                "annual_costs": float(yearly(row.to_frame().T).iloc[0]),
+                "premium": round((float(row["Prämie"]) - environmental_rebate) * 12)}
 
-    same_model = own[own["Tarifbezeichnung"] == tariff]
-    stay = yearly(same_model)
-    if stay.min() - cheapest < noticeable_saving:
-        chosen = same_model.loc[stay.idxmin()]
-        return today - float(stay.min()), (
-            ["deductible"] if int(chosen["Franchise"]) != deductible else [])
+    if deductible is None:
+        offers = best["offers"]
+        hit = offers[(offers["Versicherername"] == insurer)
+                     & (offers["Tarifbezeichnung"] == tariff)]
+        if hit.empty:
+            return None, [], None
+        today_row = hit.loc[hit["Prämie"].idxmin()]
+        today = switch_saving(offers, (insurer, tariff))
+        # Premium differences against the cheapest offer, per tariff of
+        # today's insurer, at the recommended deductible.
+        same_insurer = offers[offers["Versicherername"] == insurer]
+        cheapest_own = same_insurer.loc[same_insurer["Prämie"].idxmin()]
+        model_gap = float(round(float(cheapest_own["Prämie"]) * 12)
+                          - round(float(offers["Prämie"].min()) * 12))
+        if model_gap < noticeable_saving:
+            saving, target = today - model_gap, cheapest_own
+            changes = [] if cheapest_own["Tarifbezeichnung"] == tariff else ["model"]
+        else:
+            saving, target = today, offers.loc[offers["Prämie"].idxmin()]
+            changes = ["insurer"]
+    else:
+        rows = own[(own["Tarifbezeichnung"] == tariff) & (own["Franchise"] == deductible)]
+        if rows.empty:
+            return None, [], None
+        today_row = rows.loc[rows["Prämie"].idxmin()]
+        today = float(yearly(rows).min())
+        cheapest = float(round(best["annual_costs"]))
+        same_model = own[own["Tarifbezeichnung"] == tariff]
+        stay = yearly(same_model)
+        any_model = yearly(own)
+        if stay.min() - cheapest < noticeable_saving:
+            target = same_model.loc[stay.idxmin()]
+            changes = []
+        elif any_model.min() - cheapest < noticeable_saving:
+            target = own.loc[any_model.idxmin()]
+            changes = ["model"]
+        else:
+            others = data[data["Franchise"] == best["deductible"]]
+            target = others.loc[others["Prämie"].idxmin()]
+            changes = ["insurer"]
+        saving = today - float(yearly(target.to_frame().T).iloc[0])
+        if int(target["Franchise"]) != deductible:
+            changes = ["deductible"] + changes
 
-    any_model = yearly(own)
-    if any_model.min() - cheapest < noticeable_saving:
-        chosen = own.loc[any_model.idxmin()]
-        changes = ["deductible"] if int(chosen["Franchise"]) != deductible else []
-        return today - float(any_model.min()), changes + ["model"]
-
-    changes = ["deductible"] if best["deductible"] != deductible else []
-    return today - cheapest, changes + ["insurer"]
+    if saving < noticeable_saving:
+        # Not worth the paperwork: the advice is today's contract.
+        return saving, [], contract(today_row)
+    return saving, changes, contract(target)
 
 
 def person_view(

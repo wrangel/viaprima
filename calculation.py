@@ -588,7 +588,7 @@ def shared_contract_switch(
     data: pd.DataFrame, shared: dict, child: int, current,
     healthcare_costs: float, environmental_rebate: float,
     accident: str | None = None,
-) -> tuple[float | None, list[str]]:
+) -> tuple[float | None, list[str], dict | None]:
     """For a child placed with the shared recommendation: saving and changes.
 
     Without today's deductible, the premium difference at the recommended
@@ -598,14 +598,14 @@ def shared_contract_switch(
     cap is left out on both sides; it is a household amount, not a child's.
     """
     if not current:
-        return None, []
+        return None, [], None
     insurer, tariff, deductible = (list(current) + [None])[:3]
     placement = shared["per_child"][child]
     changes = []
     if deductible is None:
         saving = shared_switch_saving(data, shared, child, current[:2], accident)
         if saving is None:
-            return None, []
+            return None, [], None
     else:
         if accident is not None:
             data = data[data["Unfalleinschluss"] == accident]
@@ -616,7 +616,7 @@ def shared_contract_switch(
         if own.empty:
             own = rows[rows["Altersuntergruppe"] == "K1"]
         if own.empty:
-            return None, []
+            return None, [], None
         today = annual_costs(float(own["Prämie"].min()), deductible,
                              healthcare_costs, environmental_rebate, CHILDREN)
         saving = float(round(today) - round(placement["costs"]))
@@ -626,7 +626,10 @@ def shared_contract_switch(
         changes.append("insurer")
     elif tariff != shared["tariff"]:
         changes.append("model")
-    return saving, changes
+    # The advised contract is the box's recommendation for this child.
+    return saving, changes, {
+        "insurer": shared["insurer"], "tariff": shared["tariff"],
+        "deductible": placement["deductible"], "annual_costs": placement["costs"]}
 
 
 def display_results(

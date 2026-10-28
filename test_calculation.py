@@ -314,12 +314,12 @@ def test_switch_with_todays_deductible_compares_whole_yearly_costs():
     best = {"insurer": "A", "tariff": "HMO", "deductible": 2500,
             "annual_costs": 4100.0, "offers": data[data["Franchise"] == 2500]}
     args = (500.0, 0.0, ADULTS)
-    assert contract_switch(data, ("B", "BASE", 300), best, *args) == (
+    assert contract_switch(data, ("B", "BASE", 300), best, *args)[:2] == (
         1620.0, ["deductible", "insurer"])
-    assert contract_switch(data, ("A", "HMO", 300), best, *args) == (
+    assert contract_switch(data, ("A", "HMO", 300), best, *args)[:2] == (
         1020.0, ["deductible"])
-    assert contract_switch(data, ("A", "HMO", None), best, *args) == (0.0, [])
-    assert contract_switch(data, None, best, *args) == (None, [])
+    assert contract_switch(data, ("A", "HMO", None), best, *args)[:2] == (0.0, [])
+    assert contract_switch(data, None, best, *args)[:2] == (None, [])
 
 
 def test_switch_names_only_changes_worth_making():
@@ -341,8 +341,12 @@ def test_switch_names_only_changes_worth_making():
     })
     best = {"insurer": "S", "tariff": "TelMed", "deductible": 2500,
             "annual_costs": 4100.0, "offers": data[data["Franchise"] == 2500]}
-    assert contract_switch(data, ("A", "QualiMed", 300), best, 500.0, 0.0, ADULTS) == (
-        899.0, ["deductible"])
+    saving, changes, advised = contract_switch(
+        data, ("A", "QualiMed", 300), best, 500.0, 0.0, ADULTS)
+    assert (saving, changes) == (899.0, ["deductible"])
+    # The row then shows what to do: stay with A QualiMed, deductible 2500.
+    assert (advised["insurer"], advised["tariff"], advised["deductible"],
+            advised["annual_costs"]) == ("A", "QualiMed", 2500, 4101.0)
 
 
 def test_age_class_follows_the_year_of_birth():
