@@ -499,57 +499,97 @@ Either way, nothing is live until the NAS pulls it (see below).
 
 ### Making it publicly reachable
 
-The order is not arbitrary: a certificate is issued for a name, so the name has to exist
-first.
+The app is published through a **Cloudflare Tunnel**. No port is open on the router: a
+small `cloudflared` container on the NAS dials out to Cloudflare, and Cloudflare sends
+visitors back down that connection. The home IP address stays hidden, the certificate is
+Cloudflare's, and DSM needs neither a reverse proxy rule nor a Let's Encrypt certificate.
+The Free plan covers all of it.
 
-1. **Name.** Either your own domain, or free of charge via DSM:
-   *Control Panel → External Access → DDNS*, provider Synology, giving
-   `something.synology.me`. That is enough to start with and saves the detour via a
-   registrar.
+1. **DNS at Cloudflare.** Add the domain on the Free plan, let it import the existing
+   records and check them against the old provider, mail records included. Then switch
+   the nameservers at the registrar. Until the tunnel route exists, the old `A` record
+   (DNS only) keeps serving the site, so the switch itself changes nothing visible.
 
-2. **Router.** Forward port 443 to the NAS, and **port 80 as well** — not for operation,
-   but because Let's Encrypt uses it to verify that the name really is yours. If your
-   provider blocks port 80, the certificate is only obtainable via the DNS challenge.
+   If DNSSEC is on at the old provider, switch it off **first** and wait until the
+   registry has dropped the DS record — otherwise validating resolvers reject the domain
+   the moment Cloudflare answers for it:
 
-3. **Certificate.** *Control Panel → Security → Certificate → Add → Let's Encrypt*, with
-   the name from step 1 as the domain. DSM renews it by itself afterwards.
+   ```bash
+   dig +short DS viaprima.ch @a.nic.ch    # empty means go
+   ```
 
-4. **Reverse proxy.** *Control Panel → Login Portal → Advanced → Reverse Proxy*:
+2. **Tunnel.** *Zero Trust → Networks → Tunnels → Create a tunnel → Cloudflared*. Name it
+   after the machine, not the site (here `nas`): one tunnel carries every site on the NAS.
+   Copy only the token from the install command; do not run the command itself.
 
-   | | |
-   |---|---|
-   | Source | HTTPS, name from step 1, port 443 |
-   | Destination | HTTP, `localhost`, port 8501 |
+3. **cloudflared on the NAS.** A Container Manager project in `/volume1/docker/cloudflared`,
+   with the token in a file of its own, `tunnel.env`, containing one line
+   `TUNNEL_TOKEN=…`, and this compose file:
 
-   **This is where the trap is.** Streamlit keeps the connection open over a WebSocket;
-   without it the page loads and then sits at "Connecting…" — the interface is there, but
-   nothing responds. Under *Custom Header* in the reverse proxy rule, add the **WebSocket**
-   template. That sets `Upgrade` and `Connection`, and it is the most common reason a
-   Streamlit app looks dead behind a proxy.
+   ```yaml
+   services:
+     cloudflared:
+       image: cloudflare/cloudflared:latest
+       command: tunnel --no-autoupdate --protocol http2 run
+       network_mode: host
+       restart: unless-stopped
+       env_file: tunnel.env
+   ```
 
-5. **HTTP to HTTPS.** A second rule for port 80 on the same name, and **HSTS** enabled in
-   the HTTPS rule. Web Station is not needed for this.
+   - `network_mode: host` makes `localhost:8501` the NAS itself, which is where
+     `docker-compose.yml` publishes the app — on `127.0.0.1` only.
+   - `--protocol http2` because UDP out of containers is unreliable on this NAS, and the
+     default, QUIC, runs over UDP.
+   - `restart: unless-stopped`, or a reboot takes the site offline without a word.
+   - The token in its own file keeps it out of the YAML view and screenshots. Whoever
+     holds it can serve traffic for the domain.
 
-6. **Firewall.** *Control Panel → Security → Firewall*: 80 and 443 open, 8501 **not**. It
-   is not needed anyway — since this version the container listens only on `127.0.0.1`, so
-   it is not reachable from outside at all, only through the proxy on the NAS itself.
+4. **Route.** On the tunnel, add a *published application route*: domain `viaprima.ch`,
+   no subdomain, no path, service `HTTP`, URL `localhost:8501`. If Cloudflare reports that
+   it could not create the DNS record, the old `A` record is in the way: delete it and
+   add a `CNAME` `@` → `<tunnel-id>.cfargotunnel.com`, **proxied**. Do both back to back;
+   the site is unreachable in between.
 
-Then check — and check properly. That the start page loads says nothing: if the WebSocket
-template is missing, `/_stcore/health` still returns 200 and the page shows only its grey
-skeleton. The only meaningful test is whether the proxy lets the upgrade through:
+5. **HTTPS and www.** *SSL/TLS → Edge Certificates → Always Use HTTPS*. For `www`: the
+   name only carries mail records, so it cannot take a `CNAME`. Add a proxied `A` record
+   `www` → `192.0.2.1` (a reserved address that is never reached) and a redirect rule:
+   hostname equals `www.viaprima.ch`, dynamic target
+   `concat("https://viaprima.ch", http.request.uri.path)`, 301, query string preserved.
+
+6. **Close the router.** Only once the home network itself resolves the domain to
+   Cloudflare's addresses — otherwise the site works everywhere except at home. Then the
+   forwardings for 80 and 443 can go, and with them the DSM firewall rule for those ports.
+
+7. **DNSSEC**, optionally: enable it in Cloudflare and enter the DS record it shows at the
+   registrar. From then on, moving DNS away from Cloudflare means removing the DS record
+   first, as in step 1.
+
+`cloudflared` does not update itself (`--no-autoupdate`, and Docker never pulls a newer
+`latest` on its own). A weekly task on the NAS does it; `up -d` only restarts the
+container when the pull actually brought a new version:
 
 ```bash
-curl -s -i --max-time 20 \
-  -H "Connection: Upgrade" -H "Upgrade: websocket" \
-  -H "Sec-WebSocket-Version: 13" -H "Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==" \
-  https://YOURNAME/_stcore/stream | head -3
+cd /volume1/docker/cloudflared && docker compose pull && docker compose up -d && docker image prune -f
 ```
 
-- `HTTP/1.1 101 Switching Protocols` — the proxy passes the WebSocket through, the app
-  works.
-- `HTTP/2 200` with `content-type: text/html` — the proxy answers the upgrade with the
-  page instead of switching the connection. The WebSocket template is missing from the
-  rule's headers.
+Cloudflare also puts its own block of AI-crawler rules at the top of `robots.txt`
+(*AI Crawl Control*). The app's own rules follow below it unchanged.
+
+Then check — and check properly. That the start page loads says nothing: without a
+working WebSocket, `/_stcore/health` still returns 200 and the page shows only its grey
+skeleton. The meaningful test is whether the upgrade gets through. `--http1.1` matters:
+over HTTP/2, which curl picks with Cloudflare, there is no upgrade, and the answer is a
+misleading `200`.
+
+```bash
+curl -s -i --http1.1 --max-time 5 \
+  -H "Connection: Upgrade" -H "Upgrade: websocket" \
+  -H "Sec-WebSocket-Version: 13" -H "Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==" \
+  https://viaprima.ch/_stcore/stream | head -1
+```
+
+`HTTP/1.1 101 Switching Protocols` means the WebSocket gets through and the app works.
+Cloudflare passes WebSockets by default; there is nothing to switch on.
 
 ### On the Synology
 

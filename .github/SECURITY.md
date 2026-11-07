@@ -36,13 +36,16 @@ not stored at all.
 
 The values themselves do reach the server, because that is where Streamlit
 calculates: each change travels over the page's websocket, is computed with,
-and is held only in that browser session's memory until the tab closes. The
+and is held only in that browser session's memory until the tab closes. On
+the way it passes through Cloudflare, which terminates TLS in front of the app
+and forwards the connection through a tunnel to the server. The
 app writes none of it to disk or to a log, and the page says so in those words.
 
 A cookie was considered and rejected for exactly this reason: it would travel
-with every request and end up in the reverse proxy's access log. Query
+with every request and pass through Cloudflare, which sits in front of the
+app, and any log on the way. Query
 parameters were rejected too — they would sit in the URL, in browser history,
-in the proxy log, and would leak through the `Referer` header on any outbound
+in Cloudflare's request logs, and would leak through the `Referer` header on any outbound
 link.
 
 The only data the server holds is the BAG's public premium file, cached on
@@ -71,7 +74,7 @@ In scope: this repository's source, and the deployed instance at
 <https://viaprima.ch>.
 
 Out of scope: the third-party services this depends on — the BAG's data
-delivery via opendata.swiss, Docker Hub, Streamlit itself, and Let's Encrypt —
+delivery via opendata.swiss, Docker Hub, Streamlit itself, and Cloudflare —
 which should be reported to those vendors directly.
 
 Please do not run automated scanners or load tests. It runs on a small home
