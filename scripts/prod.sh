@@ -1,6 +1,10 @@
 #!/bin/bash
 # Build the image for the Synology and push it to Docker Hub.
 #
+# The normal path is .github/workflows/image.yml: every merge to main builds,
+# tests and pushes the image. This stays as the manual escape hatch, e.g. when
+# GitHub Actions is down.
+#
 # What gets built is linux/amd64 - the Synology's architecture. On an Apple
 # machine that image will not run; that is fine, it is not meant for here. For a
 # local trial use scripts/test.sh.

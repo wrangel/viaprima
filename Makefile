@@ -3,6 +3,7 @@
 #   make dev    run the app locally from the virtual environment
 #   make test   build an image for this machine and check it in a container
 #   make prod   build the image for the Synology (linux/amd64) and publish it
+#               (normally GitHub does this on every merge to main; see image.yml)
 
 .PHONY: dev test prod check
 

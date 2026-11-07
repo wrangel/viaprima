@@ -166,8 +166,9 @@ Options: `--canton`, `--region`, `--environmental-rebate`, `--max-costs`.
 [Renovate](.github/renovate.json5) proposes updates every Monday morning, set up as in
 Abstract Altitudes: minor and patch grouped into one pull request and merged
 automatically once the check is green, majors one at a time for review. The GitHub
-Actions and the Docker base image follow monthly; base-image updates are never merged
-automatically, because CI does not build the image. Security fixes come at once. The
+Actions and the Docker base image follow monthly. Base-image updates are built and tested
+like everything else, but never merged automatically: on a Python version change,
+`python-version` in `ci.yml` has to follow. Security fixes come at once. The
 Dependency Dashboard issue lists everything pending.
 
 So that a green check on such a pull request says something, `test_calculation.py`
@@ -482,12 +483,17 @@ stop and say which, rather than killing it. To run them side by side, use the po
 PORT=8502 make test
 ```
 
-`make prod` runs the tests first, then builds for `linux/amd64` and pushes the image to
-Docker Hub. On the Synology afterwards:
+Normally nobody runs `make prod`. Every merge to `main` builds the image on GitHub
+([image.yml](.github/workflows/image.yml)), starts it, and only pushes it to Docker Hub once
+it has loaded the BAG data, answered the health check, passed the WebSocket upgrade and
+served the patched page. Pull requests, Renovate's included, run the same test without
+pushing. Each push carries `1.0`, the tag the NAS pulls, and a `sha-…` tag to roll back to.
+Publishing needs the repository secrets `DOCKERHUB_USERNAME` and `DOCKERHUB_TOKEN`.
 
-```bash
-docker pull wrangel/viaprima:1.0
-```
+`make prod` is the manual fallback: it runs the tests, builds for `linux/amd64` and pushes
+from this machine.
+
+Either way, nothing is live until the NAS pulls it (see below).
 
 `make check` runs the tests and the data-source monitor without touching Docker.
 
@@ -553,6 +559,13 @@ user-defined script:
 ```bash
 bash /volume1/homes/Matthias/Drive/Programming/viaprima/scripts/syno-deploy.sh
 ```
+
+It runs weekly, Tuesdays at 04:15. Renovate merges its updates during Monday, each merge
+publishes a new image within minutes, so Tuesday morning picks up the whole week. The
+script recreates the container even when nothing changed, which is why it is not daily.
+abstractaltitudes deploys at 04:00, cloudflared updates at 04:30, so no two restart at
+once. The task runs as a dedicated user in the Docker group, not root, and mails its result
+only when it fails.
 
 The script pulls exactly the tag written in `docker-compose.yml`, brings the stack back up,
 waits until the app responds, and additionally checks that the container can reach the BAG

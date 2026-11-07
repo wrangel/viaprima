@@ -1,0 +1,147 @@
+name: Image
+
+# Builds the Docker image, starts it, checks that it really serves the app, and
+# on main pushes it to Docker Hub. Set up like images.yml in abstractaltitudes:
+#
+#   merge to main  →  this workflow builds, tests, pushes  →  syno-deploy.sh on the NAS
+#
+# `make prod` (scripts/prod.sh) still works and stays as the manual escape hatch.
+#
+# Pull requests build and test but do not push. That closes the gap ci.yml
+# leaves open: it tests the code on its own Python and never builds the image,
+# so a base-image or Streamlit update could break the container with every
+# check green. Here it turns red before anything is merged.
+
+permissions:
+  contents: read
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+# Two quick merges must not push out of order, and a push must never be
+# cancelled halfway between its two tags.
+concurrency:
+  group: image-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  image:
+    name: image
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: docker/setup-buildx-action@v4
+
+      # The tag is read from docker-compose.yml, the file the NAS pulls by, as
+      # scripts/prod.sh does. One place to change it, so the two cannot drift.
+      - name: Image name
+        id: meta
+        run: |
+          image=$(grep -E '^\s*image:' docker-compose.yml | head -1 | awk '{print $2}')
+          [ -n "$image" ] || { echo "::error::no image: line in docker-compose.yml"; exit 1; }
+          echo "image=$image" >> "$GITHUB_OUTPUT"
+          echo "repo=${image%%:*}" >> "$GITHUB_OUTPUT"
+          echo "sha=$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
+
+      # load, not push: the image goes into the local daemon so the test below
+      # can run it, and is published only once it has passed. The runner is
+      # amd64 like the Synology, so no emulation (on a Mac, pandas crashes under
+      # it - see the README).
+      - name: Build
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          platforms: linux/amd64
+          load: true
+          push: false
+          tags: |
+            ${{ steps.meta.outputs.image }}
+            ${{ steps.meta.outputs.repo }}:sha-${{ steps.meta.outputs.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      # What the container has to do before it is worth shipping:
+      #
+      # - load the BAG premium data. The entrypoint downloads the 12 MB file
+      #   and parses 220,000 rows before Streamlit starts, so this exercises
+      #   pandas and openpyxl on the real file - the part a dependency update
+      #   is most likely to break. The entrypoint only warns and starts anyway
+      #   when that fails (right for production), so its log line is checked.
+      # - answer the health check and pass the WebSocket upgrade. Without the
+      #   WebSocket the page loads and then hangs at "Connecting...".
+      # - serve the patched static page: title, canonical, robots.txt, sitemap,
+      #   preview image. If a Streamlit update moved the anchors, the build
+      #   would already have failed in patch_streamlit_head.py.
+      # - not run as root.
+      - name: Smoke test
+        env:
+          IMAGE: ${{ steps.meta.outputs.image }}
+        run: |
+          docker run -d --name smoke -p 8501:8501 -e HOME=/app "$IMAGE"
+          fail() { echo "::error::$1"; docker logs smoke; exit 1; }
+
+          for i in $(seq 1 120); do
+            curl -sf http://localhost:8501/_stcore/health >/dev/null && break
+            docker ps -q -f name=smoke -f status=running | grep -q . || fail "container exited"
+            sleep 2
+          done
+          curl -sf http://localhost:8501/_stcore/health >/dev/null || fail "no health answer within 4 minutes"
+
+          docker logs smoke 2>&1 | grep -q "Premium data ready." \
+            || fail "the premium data did not load - the app would show its 'data unavailable' message"
+
+          page=$(curl -sf http://localhost:8501/) || fail "/ did not serve"
+          echo "$page" | grep -q '<title>viaprima' || fail "the page title is not patched"
+          echo "$page" | grep -q 'rel="canonical" href="https://viaprima.ch/"' || fail "canonical link missing"
+          curl -sf http://localhost:8501/robots.txt | grep -q '^Sitemap: https://viaprima.ch/sitemap.xml' \
+            || fail "robots.txt missing or without the sitemap"
+          curl -sf http://localhost:8501/sitemap.xml | grep -q '<loc>https://viaprima.ch/</loc>' \
+            || fail "sitemap.xml missing"
+          curl -sf -o /dev/null -w '%{content_type}' http://localhost:8501/og-image.png | grep -q '^image/png' \
+            || fail "og-image.png missing"
+
+          status=$(curl -s -i -N --http1.1 --max-time 5 \
+            -H "Connection: Upgrade" -H "Upgrade: websocket" \
+            -H "Sec-WebSocket-Version: 13" -H "Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==" \
+            http://localhost:8501/_stcore/stream | head -1 || true)
+          echo "$status" | grep -q " 101 " || fail "WebSocket upgrade refused: $status"
+
+          [ "$(docker exec smoke id -u)" != "0" ] || fail "the container runs as root"
+
+          docker rm -f smoke
+
+      # Only main publishes, and only now that the image has passed.
+      - name: Log in to Docker Hub
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v4
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      # The sha- tag is the rollback path: pin it in docker-compose.yml on the
+      # NAS if a release goes wrong.
+      - name: Push
+        if: github.event_name != 'pull_request'
+        env:
+          IMAGE: ${{ steps.meta.outputs.image }}
+          SHA_TAG: ${{ steps.meta.outputs.repo }}:sha-${{ steps.meta.outputs.sha }}
+        run: |
+          docker push "$IMAGE"
+          docker push "$SHA_TAG"
+          {
+            echo "### Pushed"
+            echo ""
+            echo '```'
+            echo "$IMAGE"
+            echo "$SHA_TAG"
+            echo '```'
+            echo ""
+            echo "Live after the next run of scripts/syno-deploy.sh on the NAS (Tuesdays 04:15)."
+          } >> "$GITHUB_STEP_SUMMARY"

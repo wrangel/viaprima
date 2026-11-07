@@ -5,9 +5,11 @@ set -e
 #
 #   bash /volume1/homes/Matthias/Drive/Programming/viaprima/scripts/syno-deploy.sh
 #
-# Building and publishing happen on the Mac via "make prod". This script only
-# pulls and restarts - it never builds. The Synology lacks everything needed for
-# that anyway.
+# Building and publishing happen on GitHub: every merge to main builds, tests
+# and pushes the image (.github/workflows/image.yml; "make prod" on the Mac is
+# the fallback). This script only pulls and restarts - it never builds. The
+# Synology lacks everything needed for that anyway. Scheduled weekly, Tuesdays
+# 04:15, after Renovate's Monday merges.
 #
 # The file reaches the NAS through Synology Drive, not through git. It can
 # therefore be older than the version on the Mac; the line below says which one
