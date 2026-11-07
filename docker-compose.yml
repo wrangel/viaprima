@@ -19,10 +19,11 @@ services:
       dockerfile: Dockerfile
     image: wrangel/viaprima:1.0
     ports:
-      # Bind to localhost only. The Synology's reverse proxy runs on the NAS
-      # itself and reaches the container that way; from outside it is therefore
-      # not directly reachable. Without the binding to 127.0.0.1 the app would
-      # be open at NAS-IP:8501 - no TLS, bypassing the proxy.
+      # Bind to localhost only. cloudflared runs on the NAS with host
+      # networking and reaches the container that way (README: "Making it
+      # publicly reachable"); nothing else can. Without the binding to
+      # 127.0.0.1 the app would be open at NAS-IP:8501 - no TLS, bypassing
+      # Cloudflare.
       #
       # For access from the home network, e.g. to check from another machine:
       # BIND=0.0.0.0 docker compose up -d

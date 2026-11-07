@@ -5,12 +5,13 @@ and a new session starts, so every postcode, age and cost estimate is gone -
 for a household of four that is a lot of retyping for an accidental reload.
 
 **Why localStorage and not a cookie.** A cookie is attached to every request,
-so it would be written into the reverse proxy's access log on the Synology.
+so it would pass through Cloudflare, which sits in front of the app, and any
+proxy log on the way.
 What people enter here - postcode, age, what they expect to spend on doctors -
 is health-adjacent, and SECURITY.md says plainly that it is never written
 anywhere. localStorage never leaves the browser, so that statement stays true.
 Query parameters were rejected for the same reason: they would sit in the URL,
-in the browser history, in the proxy log, and would leak through the Referer
+in the browser history, in Cloudflare's request logs, and would leak through the Referer
 header the moment somebody clicked one of the footer links.
 
 **The round trip.** streamlit_js_eval runs the expression in the browser and
