@@ -5,9 +5,10 @@
 // not merge on its own and never looked at the Docker base image.
 //
 // What makes automerge safe here: the `check` job runs test_calculation.py,
-// so a pandas change that shifts the tipping point turns it red. And merging
-// changes nothing that is live - production only moves when `make prod`
-// pushes the image and the NAS redeploys.
+// so a pandas change that shifts the tipping point turns it red, and the
+// `image` job builds the container and checks that it loads the BAG data and
+// serves the page. Merging publishes the image to Docker Hub (image.yml);
+// production only moves when syno-deploy.sh runs on the NAS (Tuesdays 04:15).
 {
   $schema: "https://docs.renovatebot.com/renovate-schema.json",
   extends: ["config:recommended"],
@@ -64,9 +65,9 @@
       commitMessagePrefix: "ci:",
     },
     // python:3.13-slim in the Dockerfile. Monthly, and unlike abstractaltitudes
-    // not automerged: CI tests on its own Python and never builds the image,
-    // so a green check says nothing about it. Before merging, `make test`,
-    // and on a Python version change bump python-version in ci.yml to match.
+    // not automerged. The `image` job does build and test it now, but ci.yml
+    // runs the arithmetic on its own Python: on a Python version change, bump
+    // python-version there to match before merging.
     {
       matchManagers: ["dockerfile"],
       schedule: ["before 6am on the first day of the month"],
@@ -74,7 +75,7 @@
       commitMessagePrefix: "ci:",
       automerge: false,
     },
-    // Our own image in docker-compose.yml, published by `make prod`. Nothing
+    // Our own image in docker-compose.yml, published by image.yml. Nothing
     // for Renovate to propose.
     {
       matchPackageNames: ["wrangel/viaprima"],
