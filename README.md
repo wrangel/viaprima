@@ -605,10 +605,12 @@ The custom rule (*Security → Security rules → Custom rules*, action *Block*)
       or lower(http.user_agent) contains "arquivo-web-crawler" or lower(http.user_agent) contains "twitterbot"
       or lower(http.user_agent) contains "linkedinbot" or lower(http.user_agent) contains "slackbot"
       or lower(http.user_agent) contains "discordbot" or lower(http.user_agent) contains "telegrambot"))
+ and http.request.uri.path ne "/robots.txt"
 ```
 
 `cf.client.bot` is true only for bots Cloudflare has verified by origin, so a "Googlebot"
-from someone else's address is blocked. The exceptions are link previews and allowed
+from someone else's address is blocked. `robots.txt` stays readable for everyone, as in
+AI Crawl Control's own rule, so a polite crawler can at least learn the policy. The exceptions are link previews and allowed
 crawlers that may not be verified; anyone could claim those names, but all they would get
 is the public page a browser gets anyway. Bot Fight Mode stays off: it sets a cookie on
 every visitor.
