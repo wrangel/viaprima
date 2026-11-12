@@ -18,4 +18,5 @@ prod:
 
 check:
 	@$${VENV:-$$HOME/.venvs/viaprima}/bin/python test_calculation.py
+	@$${VENV:-$$HOME/.venvs/viaprima}/bin/python test_robots.py
 	@$${VENV:-$$HOME/.venvs/viaprima}/bin/python check_data_sources.py

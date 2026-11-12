@@ -58,3 +58,8 @@ jobs:
 
       - name: Arithmetic tests (no network)
         run: python test_calculation.py
+
+      # The crawler policy: no allowed search engine, archive or answer bot
+      # may be caught by the block list (matching is by substring).
+      - name: robots.txt policy
+        run: python test_robots.py

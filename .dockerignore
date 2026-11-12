@@ -11,6 +11,7 @@ __pycache__
 data/finding_history.json
 data/data_state.json
 test_calculation.py
+test_robots.py
 check_data_sources.py
 refresh_insurers.py
 refresh_regions.py
