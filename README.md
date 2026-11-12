@@ -572,8 +572,53 @@ container when the pull actually brought a new version:
 cd /volume1/docker/cloudflared && docker compose pull && docker compose up -d && docker image prune -f
 ```
 
-Cloudflare also puts its own block of AI-crawler rules at the top of `robots.txt`
-(*AI Crawl Control*). The app's own rules follow below it unchanged.
+Cloudflare's own robots.txt management (*AI Crawl Control*) stays off: the policy lives
+in `seo/robots.txt` (see "Crawlers" below), and two policies in one file contradict each
+other.
+
+#### Crawlers
+
+Zero trust: no bot is trusted by its name, and nothing is allowed unless it was decided.
+
+| | Who | Enforced by |
+|---|---|---|
+| **Allowed** | Googlebot, Bingbot, Applebot, DuckDuckBot, Bravebot; the Wayback Machine and Arquivo | verified by Cloudflare |
+| **Allowed to read and cite** | the AI answer bots `OAI-SearchBot`, `ChatGPT-User`, `PerplexityBot`, `Perplexity-User`, `Claude-SearchBot`, `Claude-User` | AI Crawl Control, per crawler |
+| **Blocked** | every other crawler in AI Crawl Control's list, training crawlers included | AI Crawl Control, per crawler (it maintains its own rule under *Security rules*) |
+| **Blocked** | every bot Cloudflare cannot verify, including crawlers nobody has heard of yet | a custom rule, below |
+
+The answer bots are allowed on purpose, unlike on abstractaltitudes.com. A bot reading
+this page sees the title, the description and the text for browsers without JavaScript;
+the calculation only exists live in the browser. What an AI answer can take from here is
+that viaprima exists and what it does - which is the point.
+
+Do **not** switch on *Block AI training crawlers* as a category: on abstractaltitudes.com
+it turned away the real Googlebot in about half of its visits. Decide per crawler instead.
+
+The custom rule (*Security → Security rules → Custom rules*, action *Block*):
+
+```
+(not cf.client.bot
+ and (lower(http.user_agent) contains "bot" or lower(http.user_agent) contains "crawl"
+      or lower(http.user_agent) contains "spider" or lower(http.user_agent) contains "scrap")
+ and not (lower(http.user_agent) contains "bravebot" or lower(http.user_agent) contains "archive.org_bot"
+      or lower(http.user_agent) contains "arquivo-web-crawler" or lower(http.user_agent) contains "twitterbot"
+      or lower(http.user_agent) contains "linkedinbot" or lower(http.user_agent) contains "slackbot"
+      or lower(http.user_agent) contains "discordbot" or lower(http.user_agent) contains "telegrambot"))
+ and http.request.uri.path ne "/robots.txt"
+```
+
+`cf.client.bot` is true only for bots Cloudflare has verified by origin, so a "Googlebot"
+from someone else's address is blocked. `robots.txt` stays readable for everyone, as in
+AI Crawl Control's own rule, so a polite crawler can at least learn the policy. The exceptions are link previews and allowed
+crawlers that may not be verified; anyone could claim those names, but all they would get
+is the public page a browser gets anyway. Bot Fight Mode stays off: it sets a cookie on
+every visitor.
+
+`seo/robots.txt` says the same as a signal: `search=yes, ai-input=yes, ai-train=no`, the
+training opt-outs `Google-Extended` and `Applebot-Extended`, and the blocked crawlers.
+`test_robots.py` (in CI and `make check`) fails if a token in the block list would also
+match an allowed crawler - robots.txt matching is by substring.
 
 Then check — and check properly. That the start page loads says nothing: without a
 working WebSocket, `/_stcore/health` still returns 200 and the page shows only its grey
