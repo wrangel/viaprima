@@ -585,7 +585,8 @@ Zero trust: no bot is trusted by its name, and nothing is allowed unless it was 
 | **Allowed** | Googlebot, Bingbot, Applebot, DuckDuckBot, Bravebot; the Wayback Machine and Arquivo | verified by Cloudflare |
 | **Allowed to read and cite** | the AI answer bots `OAI-SearchBot`, `ChatGPT-User`, `PerplexityBot`, `Perplexity-User`, `Claude-SearchBot`, `Claude-User` | AI Crawl Control, per crawler |
 | **Blocked** | every other crawler in AI Crawl Control's list, training crawlers included | AI Crawl Control, per crawler (it maintains its own rule under *Security rules*) |
-| **Blocked** | every bot Cloudflare cannot verify, including crawlers nobody has heard of yet | a custom rule, below |
+| **Blocked** | every bot Cloudflare cannot verify, including crawlers nobody has heard of yet | custom rule 1, below |
+| **Blocked** | AI crawlers Cloudflare *does* verify but AI Crawl Control has no switch for | custom rule 2, below |
 
 The answer bots are allowed on purpose, unlike on abstractaltitudes.com. A bot reading
 this page sees the title, the description and the text for browsers without JavaScript;
@@ -595,7 +596,9 @@ that viaprima exists and what it does - which is the point.
 Do **not** switch on *Block AI training crawlers* as a category: on abstractaltitudes.com
 it turned away the real Googlebot in about half of its visits. Decide per crawler instead.
 
-The custom rule (*Security → Security rules → Custom rules*, action *Block*):
+Both custom rules live under *Security → Security rules → Custom rules*, action *Block*.
+
+**Rule 1 — Block unverified bots:**
 
 ```
 (not cf.client.bot
@@ -606,19 +609,78 @@ The custom rule (*Security → Security rules → Custom rules*, action *Block*)
       or lower(http.user_agent) contains "linkedinbot" or lower(http.user_agent) contains "slackbot"
       or lower(http.user_agent) contains "discordbot" or lower(http.user_agent) contains "telegrambot"))
  and http.request.uri.path ne "/robots.txt"
+ and not starts_with(http.request.uri.path, "/.well-known/")
 ```
 
 `cf.client.bot` is true only for bots Cloudflare has verified by origin, so a "Googlebot"
-from someone else's address is blocked. `robots.txt` stays readable for everyone, as in
-AI Crawl Control's own rule, so a polite crawler can at least learn the policy. The exceptions are link previews and allowed
-crawlers that may not be verified; anyone could claim those names, but all they would get
-is the public page a browser gets anyway. Bot Fight Mode stays off: it sets a cookie on
-every visitor.
+from someone else's address is blocked. That is also why the big search engines are not
+among the exceptions: exempting the *name* "Googlebot" would let anyone in who claims it.
+The exceptions are only link previews and allowed crawlers that may not be verified;
+anyone could claim those names, but all they would get is the public page a browser gets
+anyway. `robots.txt` stays readable for everyone, as in AI Crawl Control's own rule, so a
+polite crawler can at least learn the policy, and so does `/.well-known/`. Bot Fight Mode
+stays off: it sets a cookie on every visitor.
+
+**Rule 2 — Block AI crawlers not in AI Crawl Control.** Rule 1 lets every verified bot
+through, and AI Crawl Control only has switches for the crawlers it lists. A verified AI
+crawler outside that list would pass both. This rule blocks the same list as on
+abstractaltitudes.com by name, minus the six answer bots viaprima allows:
+
+```
+(lower(http.user_agent) contains "gptbot"
+ or lower(http.user_agent) contains "claudebot"
+ or lower(http.user_agent) contains "anthropic-ai"
+ or lower(http.user_agent) contains "ccbot"
+ or lower(http.user_agent) contains "bytespider"
+ or lower(http.user_agent) contains "tiktokspider"
+ or lower(http.user_agent) contains "amazonbot"
+ or lower(http.user_agent) contains "facebookbot"
+ or lower(http.user_agent) contains "meta-externalagent"
+ or lower(http.user_agent) contains "meta-externalfetcher"
+ or lower(http.user_agent) contains "cloudvertexbot"
+ or lower(http.user_agent) contains "googleother"
+ or lower(http.user_agent) contains "google-agent"
+ or lower(http.user_agent) contains "notebooklm"
+ or lower(http.user_agent) contains "cohere"
+ or lower(http.user_agent) contains "mistralai-user"
+ or lower(http.user_agent) contains "mistralai-index"
+ or lower(http.user_agent) contains "duckassistbot"
+ or lower(http.user_agent) contains "proratainc"
+ or lower(http.user_agent) contains "timpibot"
+ or lower(http.user_agent) contains "diffbot"
+ or lower(http.user_agent) contains "omgili"
+ or lower(http.user_agent) contains "img2dataset"
+ or lower(http.user_agent) contains "petalbot"
+ or lower(http.user_agent) contains "baiduspider"
+ or lower(http.user_agent) contains "anchor browser"
+ or lower(http.user_agent) contains "terracotta"
+ or lower(http.user_agent) contains "novellum"
+ or lower(http.user_agent) contains "cloudflarebrowserrenderingcrawler"
+ or lower(http.user_agent) contains "amzn-searchbot"
+ or lower(http.user_agent) contains "meta-webindexer"
+ or lower(http.user_agent) contains "moonshotbot"
+ or lower(http.user_agent) contains "kimibot"
+ or lower(http.user_agent) contains "kimi-searchbot"
+ or lower(http.user_agent) contains "deepseekbot"
+ or lower(http.user_agent) contains "qwenbot"
+ or lower(http.user_agent) contains "grokbot"
+ or lower(http.user_agent) contains "chatglm-spider"
+ or lower(http.user_agent) contains "reflectionbot"
+ or lower(http.user_agent) contains "elevenlabscrawler"
+ or lower(http.user_agent) contains "exasearchbot"
+ or lower(http.user_agent) contains "youbot"
+ or lower(http.user_agent) contains "imagemetabot")
+```
+
+When abstractaltitudes.com's list (`config/ai-crawlers.json` there) gains a crawler, add it
+here too, unless it is one of the six answer bots.
 
 `seo/robots.txt` says the same as a signal: `search=yes, ai-input=yes, ai-train=no`, the
 training opt-outs `Google-Extended` and `Applebot-Extended`, and the blocked crawlers.
-`test_robots.py` (in CI and `make check`) fails if a token in the block list would also
-match an allowed crawler - robots.txt matching is by substring.
+`test_robots.py` (in CI and `make check`) fails if a token in the robots.txt block list
+would also match an allowed crawler - robots.txt matching is by substring - and does the
+same check for rule 2 above, read from this README, plus that rule 1 exempts every allowed
+crawler Cloudflare may not verify.
 
 Then check — and check properly. That the start page loads says nothing: without a
 working WebSocket, `/_stcore/health` still returns 200 and the page shows only its grey
