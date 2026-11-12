@@ -7,9 +7,10 @@
 # project never styles by hand.
 #
 # Font: abstractaltitudes uses Inter Variable. It is deliberately NOT pulled
-# from a CDN here. SECURITY.md states that nothing is sent to third parties,
-# and a webfont request would hand every visitor's IP address to whoever hosts
-# it. The stack below resolves to SF on Apple devices and Segoe UI on Windows,
+# from a CDN here. Apart from Cloudflare, which is in front of the site anyway
+# and adds the Web Analytics script (SECURITY.md), the page loads nothing from
+# elsewhere, and a webfont request would hand every visitor's IP address to
+# whoever hosts it. The stack below resolves to SF on Apple devices and Segoe UI on Windows,
 # both neutral grotesques close to Inter. To use Inter itself, self-host the
 # woff2 files under static/ with server.enableStaticServing and point
 # theme.fontFaces at them - then the claim stays true and the brand is exact.

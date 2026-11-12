@@ -23,8 +23,16 @@ subject.
 
 Worth knowing before you look for a data breach: there is very little to
 breach. The app has no accounts, no login, no database and no server-side
-storage of anything a visitor types. Nothing is sent to third parties; usage
-statistics are switched off.
+storage of anything a visitor types. Nothing a visitor types is sent to third
+parties, and Streamlit's own usage statistics are switched off.
+
+Visits are counted with Cloudflare Web Analytics. Cloudflare, which is in front
+of the site anyway, adds a small script to the page at its edge (loaded from
+`static.cloudflareinsights.com`). It reports that the page was loaded and how
+fast - address, referrer, browser, country - to `/cdn-cgi/rum` on viaprima.ch
+itself. It sets no cookie, uses no local storage and does not fingerprint, and
+it never sees what is typed: inputs travel over the websocket, not in the page
+address. The page says that visits are counted anonymously.
 
 What you enter — postcode, year of birth, accident cover, expected healthcare
 costs, tariff models, today's insurer, model and deductible — is kept in the

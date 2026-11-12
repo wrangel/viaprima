@@ -682,6 +682,21 @@ would also match an allowed crawler - robots.txt matching is by substring - and 
 same check for rule 2 above, read from this README, plus that rule 1 exempts every allowed
 crawler Cloudflare may not verify.
 
+#### Visitor statistics
+
+Cloudflare Web Analytics, automatic setup (*Analytics & Logs → Web Analytics*): Cloudflare
+adds its beacon, `https://static.cloudflareinsights.com/beacon.min.js`, to the page at the
+edge, and the beacon reports to `/cdn-cgi/rum` on viaprima.ch itself. No cookie, no local
+storage, no fingerprinting; inputs never reach it, since they travel over the websocket.
+SECURITY.md and the banner at the top of the page ("Besuche werden nur anonym gezählt")
+say so - switch it on only once a build with that wording is deployed.
+
+The site sends **no Content-Security-Policy**: Streamlit sets none, and neither does
+anything in front of it, so the beacon needs no exception. If one is ever added, it has to
+allow `https://static.cloudflareinsights.com` in `script-src` (and `/cdn-cgi/rum` is
+same-origin, so `connect-src 'self'` covers it); the image workflow's smoke test fails if a
+CSP turns up without it.
+
 Then check — and check properly. That the start page loads says nothing: without a
 working WebSocket, `/_stcore/health` still returns 200 and the page shows only its grey
 skeleton. The meaningful test is whether the upgrade gets through. `--http1.1` matters:
