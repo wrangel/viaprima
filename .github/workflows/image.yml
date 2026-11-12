@@ -100,6 +100,16 @@ jobs:
           page=$(curl -sf http://localhost:8501/) || fail "/ did not serve"
           echo "$page" | grep -q '<title>viaprima' || fail "the page title is not patched"
           echo "$page" | grep -q 'rel="canonical" href="https://viaprima.ch/"' || fail "canonical link missing"
+
+          # Cloudflare Web Analytics injects its beacon at the edge. Today no
+          # CSP is sent at all; if one ever appears (header or <meta>), it must
+          # let the beacon load, or visitor counting silently stops.
+          csp=$( { curl -sfI http://localhost:8501/ | grep -i '^content-security-policy:'; \
+                   echo "$page" | grep -io '<meta[^>]*content-security-policy[^>]*>'; } || true)
+          if [ -n "$csp" ]; then
+            echo "$csp" | grep -q 'https://static.cloudflareinsights.com' \
+              || fail "a Content-Security-Policy appeared without https://static.cloudflareinsights.com in script-src: $csp"
+          fi
           curl -sf http://localhost:8501/robots.txt | grep -q '^Sitemap: https://viaprima.ch/sitemap.xml' \
             || fail "robots.txt missing or without the sitemap"
           curl -sf http://localhost:8501/sitemap.xml | grep -q '<loc>https://viaprima.ch/</loc>' \
