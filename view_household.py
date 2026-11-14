@@ -164,8 +164,20 @@ def household_total(
         marked=changed,
         swatches=colours,
     )
+    # How to read the "Wechsel" columns - only when there is something in them,
+    # i.e. where today's contract is given.
+    switch_notes = []
     if any((r.get("switch") or (None,))[0] is not None for r in results):
-        st.caption(t("household.switch_note", threshold=noticeable_saving))
+        switch_notes.append(t("household.switch_note", threshold=noticeable_saving))
+        # The children's sentence only when they are counted together and at
+        # least one of them has a saving shown - otherwise it explains nothing.
+        if children_shared and any(
+            row["saving"] is not None
+            for r, row in zip(results, rows) if r["age_group"] == CHILDREN
+        ):
+            switch_notes.append(t("household.switch_note_children"))
+    for note in switch_notes:
+        st.caption(note)
 
     # The whole household as CSV - with a total row, so the file stands on its
     # own and does not have to be added up again.
@@ -187,7 +199,8 @@ def household_total(
     st.download_button(
         t("household.xlsx_button"),
         household_workbook(pd.concat([overview, total_row], ignore_index=True),
-                           results, premium_year, notes=notes, colours=colours),
+                           results, premium_year, notes=notes + switch_notes,
+                           colours=colours),
         file_name=f"viaprima.ch {t('household.file_name')} {premium_year}.xlsx",
         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     )
@@ -272,11 +285,14 @@ def _paragraphs(sheet, notes: list[str], first_row: int, width: int) -> None:
         (sheet.column_dimensions[get_column_letter(c)].width or 10) for c in columns) * 1.1))
     for offset, note in enumerate(notes):
         row = first_row + offset
-        cell = sheet.cell(row=row, column=1, value=note.replace("**", ""))
+        # Markdown is the page's; in a cell, bold markers go and list items
+        # become bullets, one per line.
+        text = note.replace("**", "").replace("\n\n", "\n").replace("\n* ", "\n• ")
+        cell = sheet.cell(row=row, column=1, value=text)
         cell.alignment = Alignment(wrap_text=True, vertical="top")
         sheet.merge_cells(start_row=row, start_column=1, end_row=row, end_column=width)
-        lines = -(-len(note) // chars_per_line)
-        sheet.row_dimensions[row].height = 15 * max(1, lines) + 3
+        lines = sum(max(1, -(-len(line) // chars_per_line)) for line in text.split("\n"))
+        sheet.row_dimensions[row].height = 15 * lines + 3
 
 
 def _tidy(sheet, header_row: int) -> None:
