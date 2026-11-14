@@ -100,7 +100,7 @@
   "household.xlsx_button": "Nucleo familiare in Excel",
   "law.family_cap_chosen_deductible": "art. 93 cpv. 3 OAMal",
   "law.family_cap_no_deductible": "art. 64 cpv. 4 LAMal",
-  "lead": "Tu indichi quali costi di malattia prevedi nel {year}: medico, ospedale, medicamenti, terapie.\n\nL'applicazione cerca, per ogni persona dell'economia domestica, assicuratore, modello e franchigia con i costi totali più bassi, tra i modelli assicurativi che fanno al caso tuo. Gli sconti per fratelli sono inclusi. Il calcolo si basa sui dati ufficiali dei premi dell'UFSP ([opendata.swiss]({opendata})). Il rimborso della tassa ambientale ({rebate} CHF all'anno) è già dedotto da tutti i premi.",
+  "lead": "Tu indichi quali costi di malattia prevedi nel {year}: medico, ospedale, medicamenti, terapie.\n\nDa questo l'applicazione calcola, per ogni persona dell'economia domestica, assicuratore, modello e franchigia con i costi totali più bassi, tra i modelli assicurativi che fanno al caso tuo. Gli sconti per fratelli sono inclusi. Il calcolo si basa sui dati ufficiali dei premi dell'UFSP ([opendata.swiss]({opendata})). Il rimborso della tassa ambientale ({rebate} CHF all'anno) è già dedotto da tutti i premi.",
   "loading.moment": "Un momento…",
   "loading.premiums": "Caricamento dei dati dei premi dell'UFSP. Il primo accesso richiede un momento, poi è veloce.",
   "metric.caption": "Premi più franchigia e aliquota percentuale, per l'offerta più conveniente disponibile – il dettaglio si trova più sotto.",

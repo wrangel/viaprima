@@ -100,7 +100,7 @@
   "household.xlsx_button": "Ménage en Excel",
   "law.family_cap_chosen_deductible": "art. 93, al. 3 OAMal",
   "law.family_cap_no_deductible": "art. 64, al. 4 LAMal",
-  "lead": "Vous indiquez les frais de santé que vous prévoyez pour {year} : médecin, hôpital, médicaments, thérapies.\n\nL'application cherche, pour chaque personne du ménage, l'assureur, le modèle et la franchise aux coûts totaux les plus bas, parmi les modèles d'assurance qui vous conviennent. Les réductions pour fratrie sont incluses. Le calcul se fonde sur les données officielles des primes de l'OFSP ([opendata.swiss]({opendata})). Le remboursement de la taxe environnementale ({rebate} CHF par an) est déjà déduit de toutes les primes.",
+  "lead": "Vous indiquez les frais de santé que vous prévoyez pour {year} : médecin, hôpital, médicaments, thérapies.\n\nÀ partir de là, l'application calcule, pour chaque personne du ménage, l'assureur, le modèle et la franchise aux coûts totaux les plus bas, parmi les modèles d'assurance qui vous conviennent. Les réductions pour fratrie sont incluses. Le calcul se fonde sur les données officielles des primes de l'OFSP ([opendata.swiss]({opendata})). Le remboursement de la taxe environnementale ({rebate} CHF par an) est déjà déduit de toutes les primes.",
   "loading.moment": "Un instant…",
   "loading.premiums": "Chargement des données des primes de l'OFSP. Le premier accès prend un moment, ensuite c'est rapide.",
   "metric.caption": "Primes plus franchise et quote-part, pour l'offre la moins chère disponible – le détail se trouve plus bas.",

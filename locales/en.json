@@ -100,7 +100,7 @@
   "household.xlsx_button": "Household as Excel",
   "law.family_cap_chosen_deductible": "Art. 93 para. 3 KVV",
   "law.family_cap_no_deductible": "Art. 64 para. 4 KVG",
-  "lead": "You say which healthcare costs you expect in {year}: doctor, hospital, medication, therapy.\n\nThe app finds, for every person in the household, the insurer, model and deductible with the lowest total costs, among the tariff models that suit you. Sibling discounts are included. The calculation uses the FOPH's official premium data ([opendata.swiss]({opendata})). The environmental levy refund ({rebate} CHF per year) is already deducted from all premiums.",
+  "lead": "You say which healthcare costs you expect in {year}: doctor, hospital, medication, therapy.\n\nFrom this, the app works out, for every person in the household, the insurer, model and deductible with the lowest total costs, among the tariff models that suit you. Sibling discounts are included. The calculation uses the FOPH's official premium data ([opendata.swiss]({opendata})). The environmental levy refund ({rebate} CHF per year) is already deducted from all premiums.",
   "loading.moment": "One moment…",
   "loading.premiums": "Loading the FOPH premium data. The first time takes a moment, after that it is quick.",
   "metric.caption": "Premiums plus deductible and coinsurance, at the cheapest available offer – the overview is further down.",
