@@ -109,7 +109,11 @@ def household_total(
         if saving is None:
             return "–", ""
         if saving < noticeable_saving:
-            return t("household.switch_no"), ""
+            # "keine" only when a switch really saves nothing; a saving of 1 to
+            # 49 francs exists, it is just not worth the paperwork.
+            if round(saving) <= 0:
+                return t("household.switch_none"), ""
+            return t("household.switch_below", threshold=noticeable_saving), ""
         current = list(r.get("current") or []) + [None, None, None]
         parts = []
         for c in changes:
