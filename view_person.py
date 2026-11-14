@@ -614,7 +614,8 @@ def person_form(person: dict, person_count: int, raw) -> dict | None:
     st.session_state.setdefault(birth_key, int(person["birth_year"]))
     birth_year = top[1].number_input(
         t("form.birth_year"), min_value=premium_year - 120, max_value=premium_year,
-        step=1, format="%d", key=birth_key, help=t("form.birth_year_help"),
+        step=1, format="%d", key=birth_key,
+        help=t("form.birth_year_help", year=premium_year),
     )
     age_group = age_group_for_birth_year(int(birth_year), premium_year)
 
