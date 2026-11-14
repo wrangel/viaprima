@@ -139,7 +139,7 @@
   "tariff_short.PRAXIS": "Practice",
   "tariff_short.TEL_DIG": "Telemed",
   "title": "viaprima",
-  "total_costs_explainer": "**Annual total costs = premiums + deductible + coinsurance.** Up to the amount of the deductible you pay your healthcare costs yourself, of everything above it {rate} (coinsurance), but at most {cap_adult} CHF per year (children: {cap_child} CHF). The insurer pays the rest.\n\nLooking only at the premium gets you nowhere: the higher the deductible, the lower the premium. Which deductible pays off depends on how high your healthcare costs are. You can't know that exactly. Take your costs of recent years as a guide and add what you can see coming: a planned operation, an ongoing therapy, regular medication.",
+  "total_costs_explainer": "**Annual total costs = premiums + deductible + coinsurance.** Up to the amount of the deductible you pay your healthcare costs yourself, of everything above it {rate} (coinsurance), but at most {cap_adult} CHF per year (children: {cap_child} CHF). The insurer pays the rest.\n\nLooking only at the premium gets you nowhere: the higher the deductible, the lower the premium. Which deductible pays off depends on how high your healthcare costs are. Of course you can't know that exactly. Take your costs of recent years as a guide and add what you can see coming: a planned operation, an ongoing therapy, regular medication.",
   "warn.no_premiums": "There are no premiums for this selection.",
   "warn.nothing_to_compute": "Nothing can be computed for this selection.",
   "xlsx.costs_axis": "Healthcare costs (CHF)",

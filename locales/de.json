@@ -139,7 +139,7 @@
   "tariff_short.PRAXIS": "Praxis",
   "tariff_short.TEL_DIG": "Telemed",
   "title": "viaprima",
-  "total_costs_explainer": "**Jährliche Gesamtkosten = Prämien + Franchise + Selbstbehalt.** Bis zur Höhe der Franchise zahlst du deine Krankheitskosten selber, von allem darüber {rate} (Selbstbehalt), höchstens aber {cap_adult} CHF im Jahr (Kinder: {cap_child} CHF). Den Rest zahlt die Kasse.\n\nNur auf die Prämie zu schauen, bringt dir nichts: Je höher die Franchise, desto tiefer die Prämie. Welche Franchise sich lohnt, hängt davon ab, wie hoch deine Krankheitskosten sind. Genau voraussehen kannst du das nicht. Nimm deine Kosten der letzten Jahre als Anhaltspunkt und rechne Absehbares dazu: eine geplante Operation, eine laufende Therapie, regelmässige Medikamente.",
+  "total_costs_explainer": "**Jährliche Gesamtkosten = Prämien + Franchise + Selbstbehalt.** Bis zur Höhe der Franchise zahlst du deine Krankheitskosten selber, von allem darüber {rate} (Selbstbehalt), höchstens aber {cap_adult} CHF im Jahr (Kinder: {cap_child} CHF). Den Rest zahlt die Kasse.\n\nNur auf die Prämie zu schauen, bringt dir nichts: Je höher die Franchise, desto tiefer die Prämie. Welche Franchise sich lohnt, hängt davon ab, wie hoch deine Krankheitskosten sind. Genau voraussehen kannst du das natürlich nicht. Nimm deine Kosten der letzten Jahre als Anhaltspunkt und rechne Absehbares dazu: eine geplante Operation, eine laufende Therapie, regelmässige Medikamente.",
   "warn.no_premiums": "Für diese Auswahl gibt es keine Prämien.",
   "warn.nothing_to_compute": "Für diese Auswahl lässt sich nichts berechnen.",
   "xlsx.costs_axis": "Krankheitskosten (CHF)",

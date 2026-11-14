@@ -139,7 +139,7 @@
   "tariff_short.PRAXIS": "Studio",
   "tariff_short.TEL_DIG": "Telemed",
   "title": "viaprima",
-  "total_costs_explainer": "**Costi totali annui = premi + franchigia + aliquota percentuale.** Fino all'importo della franchigia paghi tu i costi di malattia; su tutto ciò che la supera il {rate} (aliquota percentuale), ma al massimo {cap_adult} CHF all'anno (bambini: {cap_child} CHF). Il resto lo paga la cassa malati.\n\nGuardare solo il premio non serve: più alta la franchigia, più basso il premio. Quale franchigia convenga dipende da quanto sono alti i tuoi costi di malattia. Non puoi prevederlo con esattezza. Prendi come riferimento i costi degli ultimi anni e aggiungi ciò che è prevedibile: un'operazione programmata, una terapia in corso, farmaci regolari.",
+  "total_costs_explainer": "**Costi totali annui = premi + franchigia + aliquota percentuale.** Fino all'importo della franchigia paghi tu i costi di malattia; su tutto ciò che la supera il {rate} (aliquota percentuale), ma al massimo {cap_adult} CHF all'anno (bambini: {cap_child} CHF). Il resto lo paga la cassa malati.\n\nGuardare solo il premio non serve: più alta la franchigia, più basso il premio. Quale franchigia convenga dipende da quanto sono alti i tuoi costi di malattia. Naturalmente non puoi prevederlo con esattezza. Prendi come riferimento i costi degli ultimi anni e aggiungi ciò che è prevedibile: un'operazione programmata, una terapia in corso, farmaci regolari.",
   "warn.no_premiums": "Nessun premio per questa selezione.",
   "warn.nothing_to_compute": "Non è possibile calcolare nulla per questa selezione.",
   "xlsx.costs_axis": "Costi di malattia (CHF)",

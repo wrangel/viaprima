@@ -139,7 +139,7 @@
   "tariff_short.PRAXIS": "Cabinet",
   "tariff_short.TEL_DIG": "Télémed",
   "title": "viaprima",
-  "total_costs_explainer": "**Coûts totaux annuels = primes + franchise + quote-part.** Jusqu'au montant de la franchise, vous payez vous-même vos frais de santé ; au-delà, {rate} (quote-part), mais au maximum {cap_adult} CHF par an (enfants : {cap_child} CHF). La caisse-maladie paie le reste.\n\nNe regarder que la prime ne sert à rien : plus la franchise est élevée, plus la prime est basse. La franchise avantageuse dépend du montant de vos frais de santé. Vous ne pouvez pas le prévoir exactement. Prenez vos frais des dernières années comme repère et ajoutez ce qui est prévisible : une opération prévue, une thérapie en cours, des médicaments réguliers.",
+  "total_costs_explainer": "**Coûts totaux annuels = primes + franchise + quote-part.** Jusqu'au montant de la franchise, vous payez vous-même vos frais de santé ; au-delà, {rate} (quote-part), mais au maximum {cap_adult} CHF par an (enfants : {cap_child} CHF). La caisse-maladie paie le reste.\n\nNe regarder que la prime ne sert à rien : plus la franchise est élevée, plus la prime est basse. La franchise avantageuse dépend du montant de vos frais de santé. Bien sûr, vous ne pouvez pas le prévoir exactement. Prenez vos frais des dernières années comme repère et ajoutez ce qui est prévisible : une opération prévue, une thérapie en cours, des médicaments réguliers.",
   "warn.no_premiums": "Aucune prime pour cette sélection.",
   "warn.nothing_to_compute": "Rien ne peut être calculé pour cette sélection.",
   "xlsx.costs_axis": "Frais de santé (CHF)",
