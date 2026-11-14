@@ -116,7 +116,9 @@ st.markdown(
     + "</h3>",
     unsafe_allow_html=True,
 )
-st.caption(t("lead"))
+# The year of the premium data, not today's: in the switching season the
+# figures are already for next year, and the estimate should be too.
+st.caption(t("lead", year=premium_year))
 
 # What "Gesamtkosten" means, before the first one is shown. The figures come
 # from the constants rather than the sentence, so the text cannot drift from
