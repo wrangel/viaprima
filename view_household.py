@@ -1,10 +1,13 @@
 """The total across all people."""
 
 import io
+import re
 from datetime import date
 
 import pandas as pd
 import streamlit as st
+from openpyxl.styles import Alignment, Font
+from openpyxl.utils import get_column_letter
 
 from common import chf, show_table
 from constants import CHILDREN, coinsurance_cap, coinsurance_rate, noticeable_saving
@@ -22,14 +25,14 @@ def household_total(
     children_separately = sum(
         r["annual_costs"] for r in results if r["age_group"] == CHILDREN
     )
-    # Children placed together with one insurer (the box below) are shown and
-    # counted with that recommendation; their own best offers would
-    # contradict it.
+    # Children placed together with one insurer (the sibling paragraph below)
+    # are shown and counted with that joint recommendation; their own best
+    # offers would contradict it.
     children_shared = bool(shared) and shared["total"] < children_separately
     rows = [advised(r, shared if children_shared else None, results) for r in results]
     # The total is what the rows say: per person the advised contract - the
     # cheapest offer, or where today's contract is given, the least change
-    # worth making (or staying). Shared children count with the box's total,
+    # worth making (or staying). Shared children count with the joint total,
     # which includes the family cap.
     total = sum(row["annual_costs"] for row, r in zip(rows, results)
                 if not (children_shared and r["age_group"] == CHILDREN))
@@ -44,30 +47,31 @@ def household_total(
     columns[0].metric(t("household.per_year"), f"{chf(total)} CHF")
     columns[1].metric(t("household.per_month"), f"{chf(total / 12, 2)} CHF")
     columns[2].metric(t("household.people"), str(len(results)))
-    st.caption(t("household.caption", premiums=chf(premiums)))
+    # The paragraphs explaining the figures, collected so the Excel file
+    # carries the same sentences as the page.
+    notes = [t("household.caption", premiums=chf(premiums))]
 
-    if shared and shared.get("unknown_tiers"):
-        st.warning(
-            t("household.unknown_tiers",
-              tiers=", ".join(shared["unknown_tiers"]))
-        )
-
+    # The sibling discount as a second paragraph of that caption, not a box of
+    # its own: it explains a figure above rather than adding a new one. Only
+    # when it applies - when the children are counted together.
     if shared:
         saving = children_separately - shared["total"]
         tiers = ", ".join(c["tier"] for c in shared["per_child"])
         # Each child's own cheapest offer already at the recommended insurer:
-        # then there is nothing to choose - staying there together gets the
-        # sibling tier anyway. "Each child separately, without discount" is
-        # not an option anyone has, so it is not offered as one.
+        # then "each child separately" means the same insurer at the normal
+        # tariff. Otherwise it means each child at its own cheapest insurer.
         same_insurer = all(
             r["insurer"] == shared["insurer"]
             for r in results if r["age_group"] == CHILDREN
         )
         if saving > 0.5:
-            key = ("household.sibling_automatic" if same_insurer
-                   else "household.sibling_discount")
+            key = ("household.sibling_included" if same_insurer
+                   else "household.sibling_included_switch")
+            # The saving from the two rounded amounts, so the sentence adds up
+            # exactly as read (2'852 - 2'815 = 37, never 38).
             message = t(key,
-                        saving=chf(saving), separate=chf(children_separately),
+                        saving=chf(round(children_separately) - round(shared["total"])),
+                        separate=chf(children_separately),
                         count=child_count, insurer=shared["insurer"],
                         tariff=shared["tariff"], tiers=tiers,
                         total=chf(shared["total"]))
@@ -78,20 +82,26 @@ def household_total(
                 law = ("law.family_cap_no_deductible"
                        if shared["per_child"][0]["deductible"] == 0
                        else "law.family_cap_chosen_deductible")
-                message += "\n\n" + t("household.family_cap_applied",
-                                       cap=chf(shared["family_cap"]), law=t(law),
-                                       saving=chf(shared["family_cap_saving"]))
-            st.info(message, icon="👪")
+                message += " " + t("household.family_cap_applied",
+                                    cap=chf(shared["family_cap"]), law=t(law),
+                                    saving=chf(shared["family_cap_saving"]))
+            notes.append(message)
         elif saving < -0.5:
             # Only when the children's own cheapest offers are with different
-            # insurers - otherwise one insurer can never cost more. Equal
-            # amounts need no box at all.
-            st.info(
+            # insurers - otherwise one insurer can never cost more. Then the
+            # table shows each child on its own, and this says why.
+            notes.append(
                 t("household.sibling_not_worth",
                   separate=chf(children_separately), insurer=shared["insurer"],
-                  total=chf(shared["total"])),
-                icon="👪",
-            )
+                  total=chf(shared["total"])))
+    for note in notes:
+        st.caption(note)
+
+    if shared and shared.get("unknown_tiers"):
+        st.warning(
+            t("household.unknown_tiers",
+              tiers=", ".join(shared["unknown_tiers"]))
+        )
 
     def switch(r: dict, row: dict) -> tuple[str, str]:
         """The Ersparnis and Änderung cells: saving a year, and what to change."""
@@ -117,16 +127,23 @@ def household_total(
         [
             {
                 # Number and age class kept apart: "1. Erwachsene" reads like a
-                # female person, whereas the class is what is meant.
-                "Nr.": i,
+                # female person, whereas the class is what is meant. The
+                # person's own number, as in its heading above - not the row
+                # position, which shifts when a person has no result yet.
+                "Nr.": r.get("number", i),
                 "Altersklasse": t(f'age_class.{r["age_group"]}'),
                 "Ort": r["town"],
+                # Same words as the form and the policies: "mit" / "ohne".
+                "Unfalldeckung": t("form.accident_with") if r.get("accident") == "MIT-UNF"
+                                 else t("form.accident_without"),
                 "Franchise": row["deductible"],
                 "Versicherer": row["insurer"],
                 "Tarif": row["tariff"],
-                # Per year only: the monthly figure for the whole household is
-                # in the metric above, and a second money column per row
-                # next to the yearly saving read as a third kind of amount.
+                # The premium as the policy bills it: per month, after the
+                # environmental levy rebate, sibling discount included. The one
+                # figure here that can be checked against a policy - Kosten/Jahr
+                # adds deductible and coinsurance and cannot.
+                "Prämie/Monat": round(row["monthly"], 2),
                 "Kosten/Jahr": round(row["annual_costs"]),
                 # What changes first, then what it saves - under one "Wechsel"
                 # header in the table.
@@ -137,12 +154,15 @@ def household_total(
         ]
     )
     changed = [bool(a) for a in overview["Änderung"]]
+    # Each row carries its person's colour, the dot from the person heading.
+    colours = [r.get("colour") for r in results]
     show_table(
         overview,
-        {"Franchise": 0, "Kosten/Jahr": 0, "Ersparnis/Jahr": None},
+        {"Franchise": 0, "Prämie/Monat": 2, "Kosten/Jahr": 0, "Ersparnis/Jahr": None},
         counters=("Nr.",),
         group=("Wechsel", ["Änderung", "Ersparnis/Jahr"]),
         marked=changed,
+        swatches=colours,
     )
     if any((r.get("switch") or (None,))[0] is not None for r in results):
         st.caption(t("household.switch_note", threshold=noticeable_saving))
@@ -154,9 +174,11 @@ def household_total(
             "Nr.": None,
             "Altersklasse": t("household.total_row"),
             "Ort": "",
+            "Unfalldeckung": "",
             "Franchise": None,
             "Versicherer": "",
             "Tarif": "",
+            "Prämie/Monat": round(sum(row["monthly"] for row in rows), 2),
             "Kosten/Jahr": round(total),
             "Änderung": "",
             "Ersparnis/Jahr": "",
@@ -165,20 +187,24 @@ def household_total(
     st.download_button(
         t("household.xlsx_button"),
         household_workbook(pd.concat([overview, total_row], ignore_index=True),
-                           results, premium_year),
+                           results, premium_year, notes=notes, colours=colours),
         file_name=f"viaprima.ch {t('household.file_name')} {premium_year}.xlsx",
         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     )
 
 
 def household_workbook(summary: pd.DataFrame, results: list[dict],
-                       premium_year: int | None) -> bytes:
+                       premium_year: int | None, notes: list[str] | None = None,
+                       colours: list[str | None] | None = None) -> bytes:
     """The household as an Excel file: a summary tab, then one per person.
 
     Excel rather than CSV, so everything fits in one file with a tab for
     each person - "Zusammenfassung", "Person 1", "Person 2" - and opens
     with umlauts and columns intact. Headers are in the page language; the
-    first line names viaprima.ch, where the figures come from.
+    first line names viaprima.ch, where the figures come from. Below the
+    table, the same explanatory paragraphs as on the page (`notes`), so the
+    file explains its own figures. `colours` tints each person's number as
+    the dot does on the page.
     """
     buffer = io.BytesIO()
     credit = t("xlsx.credit", year=premium_year, date=date.today().strftime("%d.%m.%Y"))
@@ -191,9 +217,15 @@ def household_workbook(summary: pd.DataFrame, results: list[dict],
         sheet = writer.sheets[t("xlsx.summary")]
         sheet["A1"] = credit
         _tidy(sheet, header_row=3)
+        _two_decimals(sheet, header_row=3, header=t("col.Prämie/Monat"))
+        for row, colour in enumerate(colours or [], start=4):
+            if colour and _HEX.fullmatch(colour):
+                sheet.cell(row=row, column=1).font = Font(bold=True, color=colour[1:].upper())
+        _paragraphs(sheet, notes or [], first_row=3 + len(table) + 2,
+                    width=len(table.columns))
 
         for i, r in enumerate(results, start=1):
-            name = t("xlsx.person", n=i)
+            name = t("xlsx.person", n=r.get("number", i))
             matrix = r["matrix"].round(2)
             matrix.columns = [t("xlsx.deductible_column", deductible=chf(d))
                               for d in matrix.columns]
@@ -203,10 +235,48 @@ def household_workbook(summary: pd.DataFrame, results: list[dict],
             sheet["A1"] = t(
                 "xlsx.person_heading",
                 age_class=t(f'age_class.{r["age_group"]}'), town=r.get("town", ""),
+                accident=t("xlsx.with_accident") if r.get("accident") == "MIT-UNF"
+                else t("xlsx.without_accident"),
                 costs=chf(r.get("costs", 0)), deductible=chf(r["deductible"]))
             sheet["A2"] = t("xlsx.matrix_note")
             _tidy(sheet, header_row=4)
     return buffer.getvalue()
+
+
+_HEX = re.compile(r"#[0-9a-fA-F]{6}")
+
+
+def _two_decimals(sheet, header_row: int, header: str) -> None:
+    """Francs and centimes in the premium column, also for 88.00.
+
+    _tidy formats by value, and 88.0 is an integer value - it would read 88
+    next to 109.65.
+    """
+    for cell in sheet[header_row]:
+        if cell.value == header:
+            for row in range(header_row + 1, sheet.max_row + 1):
+                target = sheet.cell(row=row, column=cell.column)
+                if isinstance(target.value, (int, float)):
+                    target.number_format = "#,##0.00"
+
+
+def _paragraphs(sheet, notes: list[str], first_row: int, width: int) -> None:
+    """Each note across the table's width, wrapped, one row apiece.
+
+    Written after _tidy so the long sentences do not widen column A. Excel
+    does not size merged rows by itself, so the height is estimated from the
+    text length and the merged width.
+    """
+    columns = range(1, width + 1)
+    chars_per_line = max(40, int(sum(
+        (sheet.column_dimensions[get_column_letter(c)].width or 10) for c in columns) * 1.1))
+    for offset, note in enumerate(notes):
+        row = first_row + offset
+        cell = sheet.cell(row=row, column=1, value=note.replace("**", ""))
+        cell.alignment = Alignment(wrap_text=True, vertical="top")
+        sheet.merge_cells(start_row=row, start_column=1, end_row=row, end_column=width)
+        lines = -(-len(note) // chars_per_line)
+        sheet.row_dimensions[row].height = 15 * max(1, lines) + 3
 
 
 def _tidy(sheet, header_row: int) -> None:
@@ -232,7 +302,7 @@ def _as_number(value):
 def advised(r: dict, shared: dict | None, results: list[dict]) -> dict:
     """The contract a person's household row shows, with saving and changes.
 
-    Shared children (`shared` given): the box's recommendation for that child.
+    Shared children (`shared` given): the joint recommendation for that child.
     Otherwise, with today's contract given, the advice from contract_switch -
     which is today's contract itself when switching saves too little - and
     without one, the cheapest offer.
@@ -248,10 +318,12 @@ def advised(r: dict, shared: dict | None, results: list[dict]) -> dict:
                 "deductible": placement["deductible"],
                 "annual_costs": placement["costs"],
                 "premium": placement["costs"] - sharing,
+                "monthly": placement["monthly"],
                 "saving": saving, "changes": changes}
     saving, changes, target = r.get("switch") or (None, [], None)
     if target:
         return {**target, "saving": saving, "changes": changes}
     return {"insurer": r["insurer"], "tariff": r["tariff"], "deductible": r["deductible"],
             "annual_costs": r["annual_costs"], "premium": r["annual_premium"],
+            "monthly": r["monthly_premium"],
             "saving": saving, "changes": changes}

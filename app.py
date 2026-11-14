@@ -116,7 +116,9 @@ st.markdown(
     + "</h3>",
     unsafe_allow_html=True,
 )
-st.caption(t("lead"))
+# The year of the premium data, not today's: in the switching season the
+# figures are already for next year, and the estimate should be too.
+st.caption(t("lead", year=premium_year))
 
 # What "Gesamtkosten" means, before the first one is shown. The figures come
 # from the constants rather than the sentence, so the text cannot drift from
@@ -225,6 +227,10 @@ for number, person in enumerate(people, start=1):
         if result:
             result["town"] = entry["location"][2].split(" (")[0]
             result["id"] = person["id"]
+            # The heading's number and colour, so the household table matches
+            # the person sections even when a person above has no result yet.
+            result["number"] = number
+            result["colour"] = colour_for_person(number)
             result["costs"] = entry["costs"]
             result["location"] = entry["location"]
             result["accident"] = entry["accident"]

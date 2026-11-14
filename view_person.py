@@ -86,6 +86,7 @@ def person_summary(
         "insurer": row["Versicherername"],
         "tariff": row["Tarifbezeichnung"],
         "annual_premium": (float(row["Prämie"]) - environmental_rebate) * 12,
+        "monthly_premium": float(row["Prämie"]) - environmental_rebate,
         "switch": contract_switch(
             data[data["Zielgruppe"] == age_group], current,
             {"insurer": row["Versicherername"], "tariff": row["Tarifbezeichnung"],
@@ -158,7 +159,8 @@ def contract_switch(
         return {"insurer": row["Versicherername"], "tariff": row["Tarifbezeichnung"],
                 "deductible": int(row["Franchise"]),
                 "annual_costs": float(yearly(row.to_frame().T).iloc[0]),
-                "premium": round((float(row["Prämie"]) - environmental_rebate) * 12)}
+                "premium": round((float(row["Prämie"]) - environmental_rebate) * 12),
+                "monthly": float(row["Prämie"]) - environmental_rebate}
 
     if deductible is None:
         offers = best["offers"]
@@ -559,6 +561,9 @@ def person_view(
         "tariff": best_offer["Tarif"] if best_offer is not None else "—",
         "annual_premium": (
             float(best_offer["Prämie/Jahr"]) if best_offer is not None else 0.0
+        ),
+        "monthly_premium": (
+            float(best_offer["Prämie/Monat"]) if best_offer is not None else 0.0
         ),
     }
 
