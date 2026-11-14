@@ -16,7 +16,7 @@ import streamlit.components.v1 as components
 from calculation import (
     available_tariff_types, children_with_one_insurer, get_data, shared_contract_switch,
 )
-from common import age_group_for_birth_year, premium_year_of, premiums, premiums_cached
+from common import age_group_for_birth_year, chf, premium_year_of, premiums, premiums_cached
 from i18n import language_picker, t, t_html
 from constants import (
     ADULTS,
@@ -27,7 +27,6 @@ from constants import (
     GITHUB_PROFILE_URL,
     OTHER_APPS_URL,
     DEFAULT_PERSON,
-    FORMULA_URL,
     OPENDATA_URL,
     PRIMINFO_URL,
     REPO_URL,
@@ -117,8 +116,12 @@ st.markdown(
     unsafe_allow_html=True,
 )
 # The year of the premium data, not today's: in the switching season the
-# figures are already for next year, and the estimate should be too.
-st.caption(t("lead", year=premium_year))
+# figures are already for next year, and the estimate should be too. The source
+# and the environmental levy rebate are said here in the text rather than in a
+# footnote: the rebate is a promise about every premium on the page.
+rebate_per_year = environmental_rebate_default * 12
+st.caption(t("lead", year=premium_year, opendata=OPENDATA_URL,
+             rebate=chf(rebate_per_year, 0 if rebate_per_year.is_integer() else 2)))
 
 # What "Gesamtkosten" means, before the first one is shown. The figures come
 # from the constants rather than the sentence, so the text cannot drift from
@@ -337,29 +340,22 @@ if len(child_results) >= 2:
 
 household_total(results, len(child_ids), shared, premium_year=premium_year)
 
-st.markdown("---")
-
 # Three blocks in a fixed order: everything about the calculation (what it
-# leaves out, then the footnotes), then the personal part, then privacy right
-# above the footer, where people look for it. The tools used to sit in the
-# middle of the fine print.
+# leaves out), then the personal part, then privacy right above the footer,
+# where people look for it. The tools used to sit in the middle of the fine
+# print.
 
 # The same limitations as in the README - whoever uses the app does not read the
 # README. Collapsed, so the page does not end in small print, but reachable from
-# anywhere on the page.
+# anywhere on the page. It closes the calculation block directly, without a
+# rule of its own: the expander's border already sets it apart, and a rule above
+# and below a single box framed it twice.
 with st.expander(t("disclaimer.title")):
     st.markdown(t("disclaimer.body", priminfo=PRIMINFO_URL))
 
-# The footnotes, in the order their markers appear: * on the data source in the
-# lead, ** on the Kipppunkt in each chart caption, *** on the tariff-model help.
-# Written once here rather than beside each marker - with four people in the
-# household the Kipppunkt note would otherwise repeat four times.
-st.caption(
-    t("footnote.data", opendata=OPENDATA_URL,
-      rebate_year=f"{environmental_rebate_default * 12:.2f}")
-)
-st.caption(t("footnote.tipping_point", formula=FORMULA_URL))
-st.caption(t("footnote.pharm", year=premium_year))
+# No footnotes: what they said now stands where it is needed - the data source
+# and the rebate in the lead, the tipping point behind "Mehr zum Kipppunkt"
+# under each chart, the pharmacy models in the tariff-model help.
 
 st.markdown("---")
 

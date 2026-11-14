@@ -29,6 +29,7 @@ from constants import (
     ADULTS,
     CHILD_SUBGROUPS,
     DEDUCTIBLES,
+    FORMULA_URL,
     TARIFF_TYPES,
     coinsurance_cap,
     coinsurance_rate,
@@ -408,6 +409,12 @@ def person_view(
     else:
         parts.append(t("chart.cap_all_optimal"))
     st.caption(" ".join(parts))
+    # The background on the tipping point behind a click, right where it is
+    # mentioned - not as a footnote at the foot of the page. A popover opens on
+    # click and closes on the next one, on a phone too.
+    if r.tipping_point is not None:
+        with st.popover(t("popover.tipping_point")):
+            st.markdown(t("popover.tipping_point_body", formula=FORMULA_URL))
 
     # ------------------------------- Deductibles compared at the given costs
     st.subheader(t("table.costs_per_deductible"))
@@ -652,7 +659,10 @@ def person_form(person: dict, person_count: int, raw) -> dict | None:
         format_func=lambda m: t(f"tariff.{m}"),
         key=per_language_key(models_key, offered),
         placeholder=t("form.tariff_models_placeholder"),
-        help=t("form.tariff_models_help"),
+        # Where pharmacy models are, as long as the data has no category of
+        # their own - should the BAG ever fill PHARM, the sentence goes.
+        help=t("form.tariff_models_help") + (
+            "" if "PHARM" in offered else " " + t("form.tariff_models_help_pharm")),
     )
     st.session_state[models_key] = tariff_types
 
