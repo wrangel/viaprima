@@ -5,6 +5,7 @@ Everything several views need that is not a view of its own.
 
 import html
 import json
+import re
 
 import pandas as pd
 import streamlit as st
@@ -54,6 +55,9 @@ def excel_csv(df: pd.DataFrame, index: bool = True) -> bytes:
 # Columns whose entries are long enough to wrap onto a second line.
 _WRAPPING = {"Versicherer", "Tarif", "Änderung"}
 
+# A swatch colour goes into a style attribute, so only a plain #rrggbb passes.
+_HEX_COLOUR = re.compile(r"#[0-9a-fA-F]{6}")
+
 
 def show_table(
     df: pd.DataFrame,
@@ -62,6 +66,7 @@ def show_table(
     counters: tuple[str, ...] = (),
     group: tuple[str, list[str]] | None = None,
     marked: list[bool] | None = None,
+    swatches: list[str | None] | None = None,
 ) -> None:
     """Draw `df` as a plain HTML table, styled by .vp-table in theme.py.
 
@@ -79,7 +84,9 @@ def show_table(
     column names for the CSV exports. `highlight` tints rows, e.g. today's
     contract. `counters` (Rang, Nr.) stay left but as narrow as numbers.
     `group` puts one header (a col.* key) over adjacent columns; `marked`
-    tints those grouped cells in the rows where it is true.
+    tints those grouped cells in the rows where it is true. `swatches` puts a
+    coloured dot before the first counter, per row - the person's colour, as
+    in the person headings.
     """
 
     def css(c: str) -> str:
@@ -121,7 +128,11 @@ def show_table(
             if marked and marked[i] and c in grouped:
                 cell_css = cell_css.replace('class="', 'class="changed ') if cell_css \
                     else ' class="changed"'
-            cells.append(f"<td{cell_css}>{html.escape(text)}</td>")
+            content = html.escape(text)
+            colour = swatches[i] if swatches and i < len(swatches) else None
+            if counters and c == counters[0] and colour and _HEX_COLOUR.fullmatch(colour):
+                content = f'<span class="swatch" style="color:{colour}">●</span>&nbsp;{content}'
+            cells.append(f"<td{cell_css}>{content}</td>")
         current = ' class="current"' if highlight and highlight[i] else ""
         rows.append(f"<tr{current}>{''.join(cells)}</tr>")
     st.markdown(

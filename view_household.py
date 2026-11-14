@@ -1,10 +1,13 @@
 """The total across all people."""
 
 import io
+import re
 from datetime import date
 
 import pandas as pd
 import streamlit as st
+from openpyxl.styles import Alignment, Font
+from openpyxl.utils import get_column_letter
 
 from common import chf, show_table
 from constants import CHILDREN, coinsurance_cap, coinsurance_rate, noticeable_saving
@@ -44,7 +47,9 @@ def household_total(
     columns[0].metric(t("household.per_year"), f"{chf(total)} CHF")
     columns[1].metric(t("household.per_month"), f"{chf(total / 12, 2)} CHF")
     columns[2].metric(t("household.people"), str(len(results)))
-    st.caption(t("household.caption", premiums=chf(premiums)))
+    # The paragraphs explaining the figures, collected so the Excel file
+    # carries the same sentences as the page.
+    notes = [t("household.caption", premiums=chf(premiums))]
 
     # The sibling discount as a second paragraph of that caption, not a box of
     # its own: it explains a figure above rather than adding a new one. Only
@@ -80,15 +85,17 @@ def household_total(
                 message += " " + t("household.family_cap_applied",
                                     cap=chf(shared["family_cap"]), law=t(law),
                                     saving=chf(shared["family_cap_saving"]))
-            st.caption(message)
+            notes.append(message)
         elif saving < -0.5:
             # Only when the children's own cheapest offers are with different
             # insurers - otherwise one insurer can never cost more. Then the
             # table shows each child on its own, and this says why.
-            st.caption(
+            notes.append(
                 t("household.sibling_not_worth",
                   separate=chf(children_separately), insurer=shared["insurer"],
                   total=chf(shared["total"])))
+    for note in notes:
+        st.caption(note)
 
     if shared and shared.get("unknown_tiers"):
         st.warning(
@@ -120,10 +127,15 @@ def household_total(
         [
             {
                 # Number and age class kept apart: "1. Erwachsene" reads like a
-                # female person, whereas the class is what is meant.
-                "Nr.": i,
+                # female person, whereas the class is what is meant. The
+                # person's own number, as in its heading above - not the row
+                # position, which shifts when a person has no result yet.
+                "Nr.": r.get("number", i),
                 "Altersklasse": t(f'age_class.{r["age_group"]}'),
                 "Ort": r["town"],
+                # Same words as the form and the policies: "mit" / "ohne".
+                "Unfalldeckung": t("form.accident_with") if r.get("accident") == "MIT-UNF"
+                                 else t("form.accident_without"),
                 "Franchise": row["deductible"],
                 "Versicherer": row["insurer"],
                 "Tarif": row["tariff"],
@@ -142,12 +154,15 @@ def household_total(
         ]
     )
     changed = [bool(a) for a in overview["Änderung"]]
+    # Each row carries its person's colour, the dot from the person heading.
+    colours = [r.get("colour") for r in results]
     show_table(
         overview,
         {"Franchise": 0, "Prämie/Monat": 2, "Kosten/Jahr": 0, "Ersparnis/Jahr": None},
         counters=("Nr.",),
         group=("Wechsel", ["Änderung", "Ersparnis/Jahr"]),
         marked=changed,
+        swatches=colours,
     )
     if any((r.get("switch") or (None,))[0] is not None for r in results):
         st.caption(t("household.switch_note", threshold=noticeable_saving))
@@ -159,6 +174,7 @@ def household_total(
             "Nr.": None,
             "Altersklasse": t("household.total_row"),
             "Ort": "",
+            "Unfalldeckung": "",
             "Franchise": None,
             "Versicherer": "",
             "Tarif": "",
@@ -171,20 +187,24 @@ def household_total(
     st.download_button(
         t("household.xlsx_button"),
         household_workbook(pd.concat([overview, total_row], ignore_index=True),
-                           results, premium_year),
+                           results, premium_year, notes=notes, colours=colours),
         file_name=f"viaprima.ch {t('household.file_name')} {premium_year}.xlsx",
         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     )
 
 
 def household_workbook(summary: pd.DataFrame, results: list[dict],
-                       premium_year: int | None) -> bytes:
+                       premium_year: int | None, notes: list[str] | None = None,
+                       colours: list[str | None] | None = None) -> bytes:
     """The household as an Excel file: a summary tab, then one per person.
 
     Excel rather than CSV, so everything fits in one file with a tab for
     each person - "Zusammenfassung", "Person 1", "Person 2" - and opens
     with umlauts and columns intact. Headers are in the page language; the
-    first line names viaprima.ch, where the figures come from.
+    first line names viaprima.ch, where the figures come from. Below the
+    table, the same explanatory paragraphs as on the page (`notes`), so the
+    file explains its own figures. `colours` tints each person's number as
+    the dot does on the page.
     """
     buffer = io.BytesIO()
     credit = t("xlsx.credit", year=premium_year, date=date.today().strftime("%d.%m.%Y"))
@@ -197,9 +217,15 @@ def household_workbook(summary: pd.DataFrame, results: list[dict],
         sheet = writer.sheets[t("xlsx.summary")]
         sheet["A1"] = credit
         _tidy(sheet, header_row=3)
+        _two_decimals(sheet, header_row=3, header=t("col.Prämie/Monat"))
+        for row, colour in enumerate(colours or [], start=4):
+            if colour and _HEX.fullmatch(colour):
+                sheet.cell(row=row, column=1).font = Font(bold=True, color=colour[1:].upper())
+        _paragraphs(sheet, notes or [], first_row=3 + len(table) + 2,
+                    width=len(table.columns))
 
         for i, r in enumerate(results, start=1):
-            name = t("xlsx.person", n=i)
+            name = t("xlsx.person", n=r.get("number", i))
             matrix = r["matrix"].round(2)
             matrix.columns = [t("xlsx.deductible_column", deductible=chf(d))
                               for d in matrix.columns]
@@ -209,10 +235,48 @@ def household_workbook(summary: pd.DataFrame, results: list[dict],
             sheet["A1"] = t(
                 "xlsx.person_heading",
                 age_class=t(f'age_class.{r["age_group"]}'), town=r.get("town", ""),
+                accident=t("xlsx.with_accident") if r.get("accident") == "MIT-UNF"
+                else t("xlsx.without_accident"),
                 costs=chf(r.get("costs", 0)), deductible=chf(r["deductible"]))
             sheet["A2"] = t("xlsx.matrix_note")
             _tidy(sheet, header_row=4)
     return buffer.getvalue()
+
+
+_HEX = re.compile(r"#[0-9a-fA-F]{6}")
+
+
+def _two_decimals(sheet, header_row: int, header: str) -> None:
+    """Francs and centimes in the premium column, also for 88.00.
+
+    _tidy formats by value, and 88.0 is an integer value - it would read 88
+    next to 109.65.
+    """
+    for cell in sheet[header_row]:
+        if cell.value == header:
+            for row in range(header_row + 1, sheet.max_row + 1):
+                target = sheet.cell(row=row, column=cell.column)
+                if isinstance(target.value, (int, float)):
+                    target.number_format = "#,##0.00"
+
+
+def _paragraphs(sheet, notes: list[str], first_row: int, width: int) -> None:
+    """Each note across the table's width, wrapped, one row apiece.
+
+    Written after _tidy so the long sentences do not widen column A. Excel
+    does not size merged rows by itself, so the height is estimated from the
+    text length and the merged width.
+    """
+    columns = range(1, width + 1)
+    chars_per_line = max(40, int(sum(
+        (sheet.column_dimensions[get_column_letter(c)].width or 10) for c in columns) * 1.1))
+    for offset, note in enumerate(notes):
+        row = first_row + offset
+        cell = sheet.cell(row=row, column=1, value=note.replace("**", ""))
+        cell.alignment = Alignment(wrap_text=True, vertical="top")
+        sheet.merge_cells(start_row=row, start_column=1, end_row=row, end_column=width)
+        lines = -(-len(note) // chars_per_line)
+        sheet.row_dimensions[row].height = 15 * max(1, lines) + 3
 
 
 def _tidy(sheet, header_row: int) -> None:

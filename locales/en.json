@@ -37,6 +37,7 @@
   "col.Rang": "Rank",
   "col.Tarif": "Tariff",
   "col.Typ": "Type",
+  "col.Unfalldeckung": "Accident cover",
   "col.Versicherer": "Insurer",
   "col.Wechsel": "Switch",
   "col.Änderung": "What changes",
@@ -145,6 +146,8 @@
   "xlsx.deductible_column": "Deductible {deductible}",
   "xlsx.matrix_note": "Yearly costs in CHF – premiums, deductible and coinsurance – per deductible (columns) and healthcare costs (rows).",
   "xlsx.person": "Person {n}",
-  "xlsx.person_heading": "{age_class}, {town}: expected healthcare costs {costs} CHF, cheapest deductible {deductible} CHF",
-  "xlsx.summary": "Summary"
+  "xlsx.person_heading": "{age_class}, {town}, {accident}: expected healthcare costs {costs} CHF, cheapest deductible {deductible} CHF",
+  "xlsx.summary": "Summary",
+  "xlsx.with_accident": "with accident cover",
+  "xlsx.without_accident": "without accident cover"
 }

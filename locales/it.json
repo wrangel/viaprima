@@ -37,6 +37,7 @@
   "col.Rang": "Posizione",
   "col.Tarif": "Tariffa",
   "col.Typ": "Tipo",
+  "col.Unfalldeckung": "Copertura infortuni",
   "col.Versicherer": "Assicuratore",
   "col.Wechsel": "Cambio",
   "col.Änderung": "Da cambiare",
@@ -145,6 +146,8 @@
   "xlsx.deductible_column": "Franchigia {deductible}",
   "xlsx.matrix_note": "Costi annui in CHF – premi, franchigia e aliquota percentuale – per franchigia (colonne) e costi di malattia (righe).",
   "xlsx.person": "Persona {n}",
-  "xlsx.person_heading": "{age_class}, {town}: costi di malattia previsti {costs} CHF, franchigia più conveniente {deductible} CHF",
-  "xlsx.summary": "Riepilogo"
+  "xlsx.person_heading": "{age_class}, {town}, {accident}: costi di malattia previsti {costs} CHF, franchigia più conveniente {deductible} CHF",
+  "xlsx.summary": "Riepilogo",
+  "xlsx.with_accident": "con copertura infortuni",
+  "xlsx.without_accident": "senza copertura infortuni"
 }

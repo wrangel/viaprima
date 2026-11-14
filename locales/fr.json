@@ -37,6 +37,7 @@
   "col.Rang": "Rang",
   "col.Tarif": "Tarif",
   "col.Typ": "Type",
+  "col.Unfalldeckung": "Couverture accidents",
   "col.Versicherer": "Assureur",
   "col.Wechsel": "Changement",
   "col.Änderung": "À changer",
@@ -145,6 +146,8 @@
   "xlsx.deductible_column": "Franchise {deductible}",
   "xlsx.matrix_note": "Coûts annuels en CHF – primes, franchise et quote-part – par franchise (colonnes) et frais de santé (lignes).",
   "xlsx.person": "Personne {n}",
-  "xlsx.person_heading": "{age_class}, {town} : frais de santé attendus {costs} CHF, franchise la moins chère {deductible} CHF",
-  "xlsx.summary": "Résumé"
+  "xlsx.person_heading": "{age_class}, {town}, {accident} : frais de santé attendus {costs} CHF, franchise la moins chère {deductible} CHF",
+  "xlsx.summary": "Résumé",
+  "xlsx.with_accident": "avec couverture accidents",
+  "xlsx.without_accident": "sans couverture accidents"
 }

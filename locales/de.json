@@ -37,6 +37,7 @@
   "col.Rang": "Rang",
   "col.Tarif": "Tarif",
   "col.Typ": "Typ",
+  "col.Unfalldeckung": "Unfalldeckung",
   "col.Versicherer": "Versicherer",
   "col.Wechsel": "Wechsel",
   "col.Änderung": "Änderung",
@@ -145,6 +146,8 @@
   "xlsx.deductible_column": "Franchise {deductible}",
   "xlsx.matrix_note": "Jahreskosten in CHF – Prämien, Franchise und Selbstbehalt – je Franchise (Spalten) und Krankheitskosten (Zeilen).",
   "xlsx.person": "Person {n}",
-  "xlsx.person_heading": "{age_class}, {town}: erwartete Krankheitskosten {costs} CHF, günstigste Franchise {deductible} CHF",
-  "xlsx.summary": "Zusammenfassung"
+  "xlsx.person_heading": "{age_class}, {town}, {accident}: erwartete Krankheitskosten {costs} CHF, günstigste Franchise {deductible} CHF",
+  "xlsx.summary": "Zusammenfassung",
+  "xlsx.with_accident": "mit Unfalldeckung",
+  "xlsx.without_accident": "ohne Unfalldeckung"
 }

@@ -183,17 +183,23 @@ def configure_page() -> None:
               font-variant-numeric: tabular-nums;
           }
           .vp-table th, .vp-table td {
-              padding: 0.45rem 0.75rem;
+              padding: 0.45rem 0.55rem;
               text-align: left;
               white-space: nowrap;
               border: none;
               border-bottom: 1px solid rgba(128, 128, 128, 0.18);
           }
+          /* Headers may take two lines: "Prämie/Monat (CHF)" on one line is
+             twice as wide as the amounts below it. Wrapped, each number
+             column is as narrow as its figures, which keeps the household
+             table - eleven columns - within the page on a laptop. */
           .vp-table th {
               font-weight: 400;
               color: color-mix(in srgb, currentColor 70%, transparent);
               background: rgba(128, 128, 128, 0.12);
+              white-space: normal;
           }
+          .vp-table .swatch { font-size: 0.85em; }
           .vp-table .num { text-align: right; width: 1%; }
           .vp-table .counter { width: 1%; }
           /* Short of room, a long name wraps onto a second line rather than

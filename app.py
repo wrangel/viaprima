@@ -225,6 +225,10 @@ for number, person in enumerate(people, start=1):
         if result:
             result["town"] = entry["location"][2].split(" (")[0]
             result["id"] = person["id"]
+            # The heading's number and colour, so the household table matches
+            # the person sections even when a person above has no result yet.
+            result["number"] = number
+            result["colour"] = colour_for_person(number)
             result["costs"] = entry["costs"]
             result["location"] = entry["location"]
             result["accident"] = entry["accident"]
