@@ -22,14 +22,14 @@ def household_total(
     children_separately = sum(
         r["annual_costs"] for r in results if r["age_group"] == CHILDREN
     )
-    # Children placed together with one insurer (the box below) are shown and
-    # counted with that recommendation; their own best offers would
-    # contradict it.
+    # Children placed together with one insurer (the sibling paragraph below)
+    # are shown and counted with that joint recommendation; their own best
+    # offers would contradict it.
     children_shared = bool(shared) and shared["total"] < children_separately
     rows = [advised(r, shared if children_shared else None, results) for r in results]
     # The total is what the rows say: per person the advised contract - the
     # cheapest offer, or where today's contract is given, the least change
-    # worth making (or staying). Shared children count with the box's total,
+    # worth making (or staying). Shared children count with the joint total,
     # which includes the family cap.
     total = sum(row["annual_costs"] for row, r in zip(rows, results)
                 if not (children_shared and r["age_group"] == CHILDREN))
@@ -46,28 +46,27 @@ def household_total(
     columns[2].metric(t("household.people"), str(len(results)))
     st.caption(t("household.caption", premiums=chf(premiums)))
 
-    if shared and shared.get("unknown_tiers"):
-        st.warning(
-            t("household.unknown_tiers",
-              tiers=", ".join(shared["unknown_tiers"]))
-        )
-
+    # The sibling discount as a second paragraph of that caption, not a box of
+    # its own: it explains a figure above rather than adding a new one. Only
+    # when it applies - when the children are counted together.
     if shared:
         saving = children_separately - shared["total"]
         tiers = ", ".join(c["tier"] for c in shared["per_child"])
         # Each child's own cheapest offer already at the recommended insurer:
-        # then there is nothing to choose - staying there together gets the
-        # sibling tier anyway. "Each child separately, without discount" is
-        # not an option anyone has, so it is not offered as one.
+        # then "each child separately" means the same insurer at the normal
+        # tariff. Otherwise it means each child at its own cheapest insurer.
         same_insurer = all(
             r["insurer"] == shared["insurer"]
             for r in results if r["age_group"] == CHILDREN
         )
         if saving > 0.5:
-            key = ("household.sibling_automatic" if same_insurer
-                   else "household.sibling_discount")
+            key = ("household.sibling_included" if same_insurer
+                   else "household.sibling_included_switch")
+            # The saving from the two rounded amounts, so the sentence adds up
+            # exactly as read (2'852 - 2'815 = 37, never 38).
             message = t(key,
-                        saving=chf(saving), separate=chf(children_separately),
+                        saving=chf(round(children_separately) - round(shared["total"])),
+                        separate=chf(children_separately),
                         count=child_count, insurer=shared["insurer"],
                         tariff=shared["tariff"], tiers=tiers,
                         total=chf(shared["total"]))
@@ -78,20 +77,24 @@ def household_total(
                 law = ("law.family_cap_no_deductible"
                        if shared["per_child"][0]["deductible"] == 0
                        else "law.family_cap_chosen_deductible")
-                message += "\n\n" + t("household.family_cap_applied",
-                                       cap=chf(shared["family_cap"]), law=t(law),
-                                       saving=chf(shared["family_cap_saving"]))
-            st.info(message, icon="👪")
+                message += " " + t("household.family_cap_applied",
+                                    cap=chf(shared["family_cap"]), law=t(law),
+                                    saving=chf(shared["family_cap_saving"]))
+            st.caption(message)
         elif saving < -0.5:
             # Only when the children's own cheapest offers are with different
-            # insurers - otherwise one insurer can never cost more. Equal
-            # amounts need no box at all.
-            st.info(
+            # insurers - otherwise one insurer can never cost more. Then the
+            # table shows each child on its own, and this says why.
+            st.caption(
                 t("household.sibling_not_worth",
                   separate=chf(children_separately), insurer=shared["insurer"],
-                  total=chf(shared["total"])),
-                icon="👪",
-            )
+                  total=chf(shared["total"])))
+
+    if shared and shared.get("unknown_tiers"):
+        st.warning(
+            t("household.unknown_tiers",
+              tiers=", ".join(shared["unknown_tiers"]))
+        )
 
     def switch(r: dict, row: dict) -> tuple[str, str]:
         """The Ersparnis and Änderung cells: saving a year, and what to change."""
@@ -124,9 +127,11 @@ def household_total(
                 "Franchise": row["deductible"],
                 "Versicherer": row["insurer"],
                 "Tarif": row["tariff"],
-                # Per year only: the monthly figure for the whole household is
-                # in the metric above, and a second money column per row
-                # next to the yearly saving read as a third kind of amount.
+                # The premium as the policy bills it: per month, after the
+                # environmental levy rebate, sibling discount included. The one
+                # figure here that can be checked against a policy - Kosten/Jahr
+                # adds deductible and coinsurance and cannot.
+                "Prämie/Monat": round(row["monthly"], 2),
                 "Kosten/Jahr": round(row["annual_costs"]),
                 # What changes first, then what it saves - under one "Wechsel"
                 # header in the table.
@@ -139,7 +144,7 @@ def household_total(
     changed = [bool(a) for a in overview["Änderung"]]
     show_table(
         overview,
-        {"Franchise": 0, "Kosten/Jahr": 0, "Ersparnis/Jahr": None},
+        {"Franchise": 0, "Prämie/Monat": 2, "Kosten/Jahr": 0, "Ersparnis/Jahr": None},
         counters=("Nr.",),
         group=("Wechsel", ["Änderung", "Ersparnis/Jahr"]),
         marked=changed,
@@ -157,6 +162,7 @@ def household_total(
             "Franchise": None,
             "Versicherer": "",
             "Tarif": "",
+            "Prämie/Monat": round(sum(row["monthly"] for row in rows), 2),
             "Kosten/Jahr": round(total),
             "Änderung": "",
             "Ersparnis/Jahr": "",
@@ -232,7 +238,7 @@ def _as_number(value):
 def advised(r: dict, shared: dict | None, results: list[dict]) -> dict:
     """The contract a person's household row shows, with saving and changes.
 
-    Shared children (`shared` given): the box's recommendation for that child.
+    Shared children (`shared` given): the joint recommendation for that child.
     Otherwise, with today's contract given, the advice from contract_switch -
     which is today's contract itself when switching saves too little - and
     without one, the cheapest offer.
@@ -248,10 +254,12 @@ def advised(r: dict, shared: dict | None, results: list[dict]) -> dict:
                 "deductible": placement["deductible"],
                 "annual_costs": placement["costs"],
                 "premium": placement["costs"] - sharing,
+                "monthly": placement["monthly"],
                 "saving": saving, "changes": changes}
     saving, changes, target = r.get("switch") or (None, [], None)
     if target:
         return {**target, "saving": saving, "changes": changes}
     return {"insurer": r["insurer"], "tariff": r["tariff"], "deductible": r["deductible"],
             "annual_costs": r["annual_costs"], "premium": r["annual_premium"],
+            "monthly": r["monthly_premium"],
             "saving": saving, "changes": changes}

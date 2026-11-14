@@ -626,7 +626,7 @@ def shared_contract_switch(
         changes.append("insurer")
     elif tariff != shared["tariff"]:
         changes.append("model")
-    # The advised contract is the box's recommendation for this child.
+    # The advised contract is the joint recommendation for this child.
     return saving, changes, {
         "insurer": shared["insurer"], "tariff": shared["tariff"],
         "deductible": placement["deductible"], "annual_costs": placement["costs"]}
@@ -806,7 +806,10 @@ def _each_on_own_deductible(
         deductible = min(costs, key=costs.get)
         total += costs[deductible]
         per_child.append({"deductible": deductible, "tier": tier,
-                          "costs": costs[deductible]})
+                          "costs": costs[deductible],
+                          # What the policy bills: the monthly premium after
+                          # the environmental levy rebate, to the cent.
+                          "monthly": float(premium[tier][deductible]) - environmental_rebate})
     return {"total": total, "per_child": per_child, "family_cap_saving": 0.0}
 
 
@@ -827,7 +830,8 @@ def _all_on_one_deductible(
         per_child = [
             {"deductible": deductible, "tier": tier,
              "costs": _child_annual_costs(premium[tier][deductible], deductible,
-                                          healthcare_costs, environmental_rebate)}
+                                          healthcare_costs, environmental_rebate),
+             "monthly": float(premium[tier][deductible]) - environmental_rebate}
             for premium, tier, healthcare_costs in zip(premiums, scheme,
                                                        costs_per_child)
         ]
