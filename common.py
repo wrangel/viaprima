@@ -231,7 +231,8 @@ def choose_location(key: int, column=None) -> tuple[str, str, str] | None:
         chosen = target.selectbox(
             t("form.town"),
             entries,
-            format_func=lambda e: f"{e['town']} ({e['canton']}, {e['region']})",
+            # "Zürich (ZH, Region 1)" - a bare "1" meant nothing to anyone.
+            format_func=lambda e: f"{e['town']} ({e['canton']}, {t('form.region', n=e['region'])})",
             key=f"town_{key}",
             help=t("form.town_help"),
         )
