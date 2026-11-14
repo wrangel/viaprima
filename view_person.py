@@ -383,26 +383,34 @@ def person_view(
     # lines and the faded curves - and two paragraphs in a row read like two
     # separate topics.
     parts = [t("chart.cap_red_line", amount=chf(expected_costs))]
+    winners = sorted(set(r.optimal))
     if r.tipping_point is None:
         parts.append(t("chart.cap_no_tipping", deductible=r.lowest_deductible))
     else:
+        # "darunter die Franchise X" only holds when two deductibles take
+        # turns. With a third one cheapest somewhere below the tipping point,
+        # naming one of them would be wrong - the chart shows which.
         parts.append(
             t(
-                "chart.cap_tipping",
+                "chart.cap_tipping" if len(winners) <= 2 else "chart.cap_tipping_several",
                 tipping=chf(r.tipping_point),
                 low=r.lowest_deductible,
                 other=r.segments.iloc[0]["Franchise"],
                 spread=chf(r.max_spread),
             )
         )
+        # Holds beyond the range shown too: above the lowest deductible its
+        # costs rise no faster than any other's, so once cheapest it stays so.
         if expected_costs > r.tipping_point:
             parts.append(t("chart.cap_above_tipping"))
     if r.never_optimal:
-        winners = sorted(set(r.optimal))
+        # "0 und 600", "0, 300 und 600" - CHF once, in the sentence.
+        names = [str(w) for w in winners]
         parts.append(
             t(
                 "chart.cap_never_optimal",
-                winners=t("chart.and").join(f"{w} CHF" for w in winners),
+                winners=(", ".join(names[:-1]) + t("chart.and") + names[-1]
+                         if len(names) > 1 else names[0]),
                 never=", ".join(str(d) for d in r.never_optimal),
             )
         )
@@ -418,6 +426,7 @@ def person_view(
 
     # ------------------------------- Deductibles compared at the given costs
     st.subheader(t("table.costs_per_deductible"))
+    st.caption(t("table.costs_per_deductible_caption", costs=chf(expected_costs)))
     comparison = (
         at_expected.rename("Kosten/Jahr")
         .reset_index()
@@ -514,13 +523,16 @@ def person_view(
             )
         elif current_rank == 1:
             st.success(
-                t("offers.current_best", year=premium_year,
+                # Both sentences name the deductible: the ranking is at the
+                # recommended one, not necessarily today's - so "nothing to
+                # save" is said of insurer and model only.
+                t("offers.current_best", year=premium_year, deductible=best_deductible,
                   insurer=current[0], tariff=current[1])
             )
         elif current_rank is not None:
             st.info(
                 t("offers.current_rank", insurer=current[0], tariff=current[1],
-                  rank=current_rank, total=len(ranking),
+                  deductible=best_deductible, rank=current_rank, total=len(ranking),
                   saving=chf(switch_saving(ranking, current[:2])))
             )
 
