@@ -340,16 +340,16 @@ if len(child_results) >= 2:
 
 household_total(results, len(child_ids), shared, premium_year=premium_year)
 
-st.markdown("---")
-
 # Three blocks in a fixed order: everything about the calculation (what it
-# leaves out, then the footnotes), then the personal part, then privacy right
-# above the footer, where people look for it. The tools used to sit in the
-# middle of the fine print.
+# leaves out), then the personal part, then privacy right above the footer,
+# where people look for it. The tools used to sit in the middle of the fine
+# print.
 
 # The same limitations as in the README - whoever uses the app does not read the
 # README. Collapsed, so the page does not end in small print, but reachable from
-# anywhere on the page.
+# anywhere on the page. It closes the calculation block directly, without a
+# rule of its own: the expander's border already sets it apart, and a rule above
+# and below a single box framed it twice.
 with st.expander(t("disclaimer.title")):
     st.markdown(t("disclaimer.body", priminfo=PRIMINFO_URL))
 
