@@ -100,7 +100,7 @@
   "household.xlsx_button": "Haushalt als Excel",
   "law.family_cap_chosen_deductible": "Art. 93 Abs. 3 KVV",
   "law.family_cap_no_deductible": "Art. 64 Abs. 4 KVG",
-  "lead": "Du sagst, welche Krankheitskosten du {year} erwartest: Arzt, Spital, Medikamente, Therapien.\n\nDie App sucht für jede Person im Haushalt Versicherer, Modell und Franchise mit den tiefsten Gesamtkosten, unter den Tarifmodellen, die für dich in Frage kommen. Geschwisterrabatte sind eingerechnet. Gerechnet wird mit den offiziellen Prämiendaten des BAG ([opendata.swiss]({opendata})). Die Rückerstattung der Umweltabgabe ({rebate} CHF pro Jahr) ist von allen Prämien schon abgezogen.",
+  "lead": "Du sagst, welche Krankheitskosten du {year} erwartest: Arzt, Spital, Medikamente, Therapien.\n\nDaraus berechnet die App für jede Person im Haushalt Versicherer, Modell und Franchise mit den tiefsten Gesamtkosten, unter den Tarifmodellen, die für dich in Frage kommen. Geschwisterrabatte sind eingerechnet. Gerechnet wird mit den offiziellen Prämiendaten des BAG ([opendata.swiss]({opendata})). Die Rückerstattung der Umweltabgabe ({rebate} CHF pro Jahr) ist von allen Prämien schon abgezogen.",
   "loading.moment": "Einen Moment…",
   "loading.premiums": "Lade die Prämiendaten des BAG. Beim ersten Aufruf dauert das einen Moment, danach geht es schnell.",
   "metric.caption": "Prämien plus Franchise und Selbstbehalt, beim günstigsten Angebot, das es gibt. Die ganze Liste findest du weiter unten.",
