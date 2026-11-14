@@ -30,9 +30,11 @@ from constants import (
     OPENDATA_URL,
     PRIMINFO_URL,
     REPO_URL,
+    DEDUCTIBLES,
     coinsurance_cap,
     coinsurance_rate,
     environmental_rebate_default,
+    ordinary_adult_deductible,
 )
 from persistence import handle_forget, request_forget, restore, save
 from theme import apply_person_colours, colour_for_person, configure_page
@@ -150,7 +152,9 @@ if premium_year > this_year:
     st.markdown(f'<div class="season">{t_html("season.open", year=premium_year, deadline_year=this_year)}</div>',
                 unsafe_allow_html=True)
 elif premium_year == this_year:
-    st.markdown(f'<div class="season">{t_html("season.closed", year=premium_year, next=premium_year + 1)}</div>',
+    # The ordinary (lowest) deductible from the constants: 300 CHF for adults,
+    # none for children - a single "300" would be wrong for every child.
+    st.markdown(f'<div class="season">{t_html("season.closed", year=premium_year, next=premium_year + 1, ordinary_adult=ordinary_adult_deductible, ordinary_child=DEDUCTIBLES[CHILDREN][0])}</div>',
                 unsafe_allow_html=True)
 else:
     st.warning(t("season.stale", year=premium_year))
