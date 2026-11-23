@@ -745,3 +745,8 @@ second, parsing the 220,000 rows out of the Excel format about six seconds on a 
 machine and a multiple of that on the Synology. Read back from the cache, startup takes
 0.14 seconds. If a newer premium file arrives, the parsed copy is discarded and rebuilt.
 That way a restart does not cost those six seconds every time.
+
+The file is refreshed after seven days. If the BAG's download server is unreachable then -
+on 23 November 2026 it answered 503 to everything - the app keeps using the last download
+and logs a warning. Premiums are set once a year, so that copy is still the right data;
+only without any copy does the page show that the premium data is unavailable.
