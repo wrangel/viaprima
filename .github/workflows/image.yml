@@ -94,8 +94,18 @@ jobs:
           done
           curl -sf http://localhost:8501/_stcore/health >/dev/null || fail "no health answer within 4 minutes"
 
-          docker logs smoke 2>&1 | grep -q "Premium data ready." \
-            || fail "the premium data did not load - the app would show its 'data unavailable' message"
+          # The fresh container has no stored copy, so this needs the BAG's
+          # download server. When that server is down (503 to everything on
+          # 2026-11-23), the parse cannot be tested here - but that is not a
+          # fault of the image, and production keeps its last download. So a
+          # BAG outage only warns; any other load failure still fails.
+          if ! docker logs smoke 2>&1 | grep -q "Premium data ready."; then
+            if docker logs smoke 2>&1 | grep -qE "HTTP Error 5[0-9][0-9]|URLError|timed out|Connection refused"; then
+              echo "::warning::The BAG download server is unreachable, so this test could not load the premium data. Everything else is checked."
+            else
+              fail "the premium data did not load - the app would show its 'data unavailable' message"
+            fi
+          fi
 
           page=$(curl -sf http://localhost:8501/) || fail "/ did not serve"
           echo "$page" | grep -q '<title>viaprima' || fail "the page title is not patched"
