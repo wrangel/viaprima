@@ -427,6 +427,45 @@ def test_cheapest_child_combination_picks_the_cheapest():
     assert cheapest_child_combination(premiums, 0) == (0.0, [])
 
 
+def test_a_failed_refresh_keeps_the_last_download():
+    """The BAG server answered 503 on 2026-11-23. A week-old copy beats an outage."""
+    import os
+    import tempfile
+    import time
+    import urllib.error
+    from pathlib import Path
+
+    import calculation
+
+    def unavailable(*args, **kwargs):
+        raise urllib.error.HTTPError("https://example.invalid/", 503,
+                                     "Service Unavailable", None, None)
+
+    original_dir = calculation.CACHE_DIR
+    original_open = calculation.urllib.request.urlopen
+    with tempfile.TemporaryDirectory() as folder:
+        calculation.CACHE_DIR = Path(folder)
+        calculation.urllib.request.urlopen = unavailable
+        try:
+            stale = Path(folder) / "premiums.xlsx"
+            stale.write_bytes(b"last download")
+            eight_days_ago = time.time() - 8 * 86400
+            os.utime(stale, (eight_days_ago, eight_days_ago))
+            kept = calculation.download_file("https://example.invalid/", "premiums.xlsx")
+            assert kept.read_bytes() == b"last download", "the stale copy was not kept"
+
+            # With nothing to fall back on, the failure still surfaces.
+            try:
+                calculation.download_file("https://example.invalid/", "missing.xlsx")
+            except OSError:
+                pass
+            else:
+                raise AssertionError("a failed first download went unnoticed")
+        finally:
+            calculation.CACHE_DIR = original_dir
+            calculation.urllib.request.urlopen = original_open
+
+
 def main() -> int:
     tests = [
         value for name, value in sorted(globals().items()) if name.startswith("test_")

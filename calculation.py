@@ -55,7 +55,7 @@ _ACCIDENT_DEFAULT = {
 
 def download_file(url: str, filename: str, max_age_days: int = 7) -> Path:
     """Download a file into the cache. An existing download is reused as long as
-    it is younger than `max_age_days`."""
+    it is younger than `max_age_days` - and also when the refresh fails."""
     CACHE_DIR.mkdir(exist_ok=True)
     target = CACHE_DIR / filename
 
@@ -65,8 +65,22 @@ def download_file(url: str, filename: str, max_age_days: int = 7) -> Path:
             return target
 
     request = urllib.request.Request(url, headers={"User-Agent": _USER_AGENT})
-    with urllib.request.urlopen(request) as response:
-        content = response.read()
+    try:
+        with urllib.request.urlopen(request, timeout=120) as response:
+            content = response.read()
+    except OSError as problem:
+        # HTTP errors, refused connections and timeouts are all OSErrors. The
+        # BAG's download server goes down now and then - on 2026-11-23 it
+        # answered 503 to everything. Premiums are set once a year, so the last
+        # download is still the right data: keep it rather than tell every
+        # visitor after a restart that the premiums are unavailable. Without a
+        # copy there is nothing to fall back on, and the failure surfaces.
+        if target.exists():
+            stamp = datetime.fromtimestamp(target.stat().st_mtime)
+            print(f"WARNING: could not refresh {filename} ({problem}); "
+                  f"using the download from {stamp:%Y-%m-%d}.")
+            return target
+        raise
 
     temp = target.with_suffix(target.suffix + ".part")
     temp.write_bytes(content)
